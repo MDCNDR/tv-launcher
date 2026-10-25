@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Мой лаунчер</string>
+    <string name="wifi">Wi-Fi</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="settings">Настройки</string>
+    <string name="add_apps">Приложения</string>
+    <string name="picker_title">Отметьте приложения для главного экрана</string>
+    <string name="picker_hint">ОК — добавить или убрать · Назад — готово</string>
+    <string name="weather_loading">Погода…</string>
+    <string name="weather_error">Нет данных о погоде</string>
+    <string name="city_title">Город для погоды</string>
+    <string name="city_not_found">Город не найден</string>
+    <string name="ok">ОК</string>
+    <string name="cancel">Отмена</string>
+    <string name="move_left">Сдвинуть влево</string>
+    <string name="move_right">Сдвинуть вправо</string>
+    <string name="remove">Убрать с главного экрана</string>
+    <string name="app_info">О приложении</string>
+    <string name="cannot_open">Не удалось открыть</string>
+</resources>
