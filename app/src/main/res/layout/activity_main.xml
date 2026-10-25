@@ -26,6 +26,7 @@
         android:background="@drawable/scrim_bottom" />
 
     <FrameLayout
+        android:id="@+id/content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipChildren="false"
@@ -77,6 +78,20 @@
                     android:contentDescription="@string/vpn"
                     android:src="@drawable/ic_vpn_off"
                     android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/btn_sleep"
+                    style="@style/Circle"
+                    android:contentDescription="@string/sleep"
+                    android:src="@drawable/ic_sleep"
+                    android:tint="@color/chip_text" />
+
+                <ImageView
+                    android:id="@+id/btn_clean"
+                    style="@style/Circle"
+                    android:contentDescription="@string/clean"
+                    android:src="@drawable/ic_clean"
+                    android:tint="@color/chip_text" />
 
                 <ImageView
                     android:id="@+id/btn_wifi"

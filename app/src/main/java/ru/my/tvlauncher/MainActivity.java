@@ -73,6 +73,15 @@ public class MainActivity extends Activity {
         renderVpn(vpn.isActive());
     };
 
+    private ImageView sleepBtn;
+    private View content;
+
+    /** Приложение, которое ждёт переключения VPN перед запуском. */
+    private String pendingLaunch;
+    private boolean pendingWant;
+    private long pendingDeadline;
+    private final Runnable pendingCheck = this::checkPendingLaunch;
+
     private TextView updateBtn;
     private Updater.Info update;
     private boolean updating;
@@ -108,11 +117,17 @@ public class MainActivity extends Activity {
         vpnBtn = findViewById(R.id.btn_vpn);
         vpnBtn.setOnClickListener(v -> toggleVpn());
 
+        content = findViewById(R.id.content);
+        sleepBtn = findViewById(R.id.btn_sleep);
+        sleepBtn.setOnClickListener(v -> showSleepDialog());
+        findViewById(R.id.btn_clean).setOnClickListener(v -> cleanMemory());
+
         // Подпись под круглыми кнопками: показывает, что сейчас в фокусе.
         topHint = findViewById(R.id.top_hint);
-        for (int id : new int[]{R.id.btn_vpn, R.id.btn_wifi, R.id.btn_bluetooth, R.id.btn_settings}) {
+        for (int id : TOP_BUTTONS) {
             findViewById(id).setOnFocusChangeListener((v, has) -> {
                 if (has) {
+                    if (v == sleepBtn) renderSleep();
                     topHint.setText(v.getContentDescription());
                     topHint.setVisibility(View.VISIBLE);
                 } else if (!isTopButtonFocused()) {
@@ -137,6 +152,8 @@ public class MainActivity extends Activity {
         } else {
             vpnBtn.setVisibility(View.GONE);
         }
+        renderSleep();
+        applyNightMode();
         ui.removeCallbacks(refreshTick);
         ui.post(refreshTick);
     }
@@ -183,8 +200,9 @@ public class MainActivity extends Activity {
         for (String pkg : favs) {
             Apps.Entry e = Apps.forPackage(this, pkg);
             if (e == null) continue; // приложение удалили — просто не показываем
-            View tile = Tiles.make(this, favRow, e.label);
+            TextView tile = Tiles.make(this, favRow, e.label);
             tile.setTag(pkg);
+            showVpnMarker(tile, prefs.vpnRule(pkg));
             tile.setOnClickListener(v -> launch(pkg));
             tile.setOnLongClickListener(v -> {
                 showTileMenu(pkg, e.label);
@@ -207,12 +225,15 @@ public class MainActivity extends Activity {
     }
 
     private void showTileMenu(String pkg, CharSequence label) {
+        boolean happ = Vpn.isHappInstalled(this);
         String[] items = {
                 getString(R.string.move_left),
                 getString(R.string.move_right),
                 getString(R.string.remove),
                 getString(R.string.app_info),
+                getString(R.string.vpn_rule_menu, vpnRuleName(prefs.vpnRule(pkg))),
         };
+        if (!happ) items = java.util.Arrays.copyOf(items, 4);
         new AlertDialog.Builder(this, R.style.Dialog)
                 .setTitle(label)
                 .setItems(items, (d, which) -> {
@@ -231,13 +252,95 @@ public class MainActivity extends Activity {
                         case 3:
                             openAppInfo(pkg);
                             return;
+                        case 4:
+                            showVpnRuleDialog(pkg, label);
+                            return;
                     }
                     buildFavorites();
                 })
                 .show();
     }
 
+    /** Запуск с плитки: сначала переключаем VPN по правилу приложения, если нужно. */
     private void launch(String pkg) {
+        int rule = prefs.vpnRule(pkg);
+        if (rule != Prefs.VPN_ANY && Vpn.isHappInstalled(this)) {
+            boolean want = rule == Prefs.VPN_ON;
+            if (vpn.isActive() != want && vpn.request(want)) {
+                Toast.makeText(this, want ? R.string.vpn_switching_on : R.string.vpn_switching_off,
+                        Toast.LENGTH_SHORT).show();
+                pendingLaunch = pkg;
+                pendingWant = want;
+                pendingDeadline = System.currentTimeMillis() + 8_000;
+                ui.removeCallbacks(pendingCheck);
+                ui.postDelayed(pendingCheck, 300);
+                return;
+            }
+        }
+        startApp(pkg);
+    }
+
+    /** Ждём, пока VPN переключится и лаунчер снова окажется на экране, затем запускаем. */
+    private void checkPendingLaunch() {
+        if (pendingLaunch == null) return;
+        long now = System.currentTimeMillis();
+        boolean switched = vpn.isActive() == pendingWant;
+        boolean timedOut = now > pendingDeadline;
+        if (resumed && (switched || timedOut)) {
+            String pkg = pendingLaunch;
+            pendingLaunch = null;
+            if (!switched) Toast.makeText(this, R.string.vpn_switch_failed, Toast.LENGTH_SHORT).show();
+            startApp(pkg);
+            return;
+        }
+        if (now > pendingDeadline + 15_000) { // так и не вернулись на экран — отменяем
+            pendingLaunch = null;
+            return;
+        }
+        ui.postDelayed(pendingCheck, 300);
+    }
+
+    private void showVpnRuleDialog(String pkg, CharSequence label) {
+        String[] names = {
+                getString(R.string.vpn_rule_any),
+                getString(R.string.vpn_rule_on),
+                getString(R.string.vpn_rule_off),
+        };
+        new AlertDialog.Builder(this, R.style.Dialog)
+                .setTitle(getString(R.string.vpn_rule_title) + " · " + label)
+                .setSingleChoiceItems(names, prefs.vpnRule(pkg), (d, which) -> {
+                    prefs.setVpnRule(pkg, which);
+                    focusPkg = pkg;
+                    d.dismiss();
+                    buildFavorites();
+                })
+                .show();
+    }
+
+    private String vpnRuleName(int rule) {
+        switch (rule) {
+            case Prefs.VPN_ON: return getString(R.string.vpn_rule_on).toLowerCase(java.util.Locale.ROOT);
+            case Prefs.VPN_OFF: return getString(R.string.vpn_rule_off).toLowerCase(java.util.Locale.ROOT);
+            default: return getString(R.string.vpn_rule_any).toLowerCase(java.util.Locale.ROOT);
+        }
+    }
+
+    /** Маленький щит справа от названия: зелёный — с VPN, серый — без VPN. */
+    private void showVpnMarker(TextView tile, int rule) {
+        int res = rule == Prefs.VPN_ON ? R.drawable.ic_vpn_on
+                : rule == Prefs.VPN_OFF ? R.drawable.ic_vpn_off : 0;
+        if (res == 0) {
+            tile.setCompoundDrawablesRelative(null, null, null, null);
+            return;
+        }
+        android.graphics.drawable.Drawable d = getDrawable(res);
+        int size = Tiles.dp(this, 16);
+        d.setBounds(0, 0, size, size);
+        tile.setCompoundDrawablePadding(Tiles.dp(this, 10));
+        tile.setCompoundDrawablesRelative(null, null, d, null);
+    }
+
+    private void startApp(String pkg) {
         Intent i = Apps.launchIntent(getPackageManager(), pkg);
         if (i == null) {
             Toast.makeText(this, R.string.cannot_open, Toast.LENGTH_SHORT).show();
@@ -280,6 +383,8 @@ public class MainActivity extends Activity {
         if (now - ratesLoadedAt > RATES_TTL) loadRates();
         if (now - wallpaperLoadedAt > WALLPAPER_TTL) loadWallpaper();
         if (now - updateCheckedAt > UPDATE_TTL) checkUpdate();
+        renderSleep();
+        applyNightMode();
     }
 
     private void loadWeather() {
@@ -361,7 +466,7 @@ public class MainActivity extends Activity {
                 boolean first = wallpaper.getDrawable() == null;
                 wallpaper.setImageBitmap(r.bitmap);
                 wallpaperCaption.setText(r.caption);
-                if (first) wallpaper.animate().alpha(1f).setDuration(600).start();
+                if (first) wallpaper.animate().alpha(isNight() ? 0.3f : 1f).setDuration(600).start();
                 wallpaperLoadedAt = System.currentTimeMillis();
             });
         });
@@ -405,11 +510,16 @@ public class MainActivity extends Activity {
         if (vpnBtn.isFocused()) topHint.setText(getString(label));
     }
 
+    private static final int[] TOP_BUTTONS = {
+            R.id.btn_vpn, R.id.btn_sleep, R.id.btn_clean,
+            R.id.btn_wifi, R.id.btn_bluetooth, R.id.btn_settings,
+    };
+
     private boolean isTopButtonFocused() {
         View f = getCurrentFocus();
         if (f == null) return false;
-        int id = f.getId();
-        return id == R.id.btn_vpn || id == R.id.btn_wifi || id == R.id.btn_bluetooth || id == R.id.btn_settings;
+        for (int id : TOP_BUTTONS) if (f.getId() == id) return true;
+        return false;
     }
 
     // ---------- Обновление лаунчера ----------
@@ -475,5 +585,108 @@ public class MainActivity extends Activity {
                 });
             }
         });
+    }
+
+    // ---------- Таймер сна ----------
+
+    private static final int[] SLEEP_MINUTES = {15, 30, 45, 60, 90, 120};
+
+    private void showSleepDialog() {
+        boolean active = prefs.sleepAt() > 0;
+        String[] items = new String[SLEEP_MINUTES.length + (active ? 1 : 0)];
+        int k = 0;
+        if (active) items[k++] = getString(R.string.sleep_off);
+        for (int m : SLEEP_MINUTES) items[k++] = m < 60 ? m + " мин" : (m % 60 == 0 ? m / 60 + " ч" : m / 60 + " ч " + m % 60 + " мин");
+        new AlertDialog.Builder(this, R.style.Dialog)
+                .setTitle(R.string.sleep_title)
+                .setItems(items, (d, which) -> {
+                    if (active && which == 0) {
+                        SleepReceiver.schedule(this, 0);
+                        Toast.makeText(this, R.string.sleep_cancelled, Toast.LENGTH_SHORT).show();
+                        renderSleep();
+                        return;
+                    }
+                    int minutes = SLEEP_MINUTES[which - (active ? 1 : 0)];
+                    // Сразу проверяем root, чтобы запрос Magisk появился сейчас, а не ночью.
+                    io.execute(() -> {
+                        boolean root = Root.available();
+                        ui.post(() -> {
+                            if (!root) {
+                                Toast.makeText(this, R.string.need_root, Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            SleepReceiver.schedule(this, minutes);
+                            Toast.makeText(this, getString(R.string.sleep_set, minutes), Toast.LENGTH_SHORT).show();
+                            renderSleep();
+                        });
+                    });
+                })
+                .show();
+    }
+
+    private void renderSleep() {
+        long at = prefs.sleepAt();
+        if (at > 0) {
+            int left = (int) Math.max(1, Math.round((at - System.currentTimeMillis()) / 60_000.0));
+            sleepBtn.setImageResource(R.drawable.ic_sleep_on);
+            sleepBtn.setImageTintList(null);
+            sleepBtn.setContentDescription(getString(R.string.sleep_in, left));
+        } else {
+            sleepBtn.setImageResource(R.drawable.ic_sleep);
+            sleepBtn.setImageTintList(getColorStateList(R.color.chip_text));
+            sleepBtn.setContentDescription(getString(R.string.sleep));
+        }
+        if (sleepBtn.isFocused()) topHint.setText(sleepBtn.getContentDescription());
+    }
+
+    // ---------- Ночной режим ----------
+
+    /** С 23:00 до 7:00 фото и текст приглушены. */
+    private boolean isNight() {
+        int h = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY);
+        return h >= 23 || h < 7;
+    }
+
+    private void applyNightMode() {
+        boolean night = isNight();
+        content.setAlpha(night ? 0.6f : 1f);
+        if (wallpaper.getDrawable() != null) wallpaper.setAlpha(night ? 0.3f : 1f);
+    }
+
+    // ---------- Очистка памяти ----------
+
+    private boolean cleaning;
+
+    private void cleanMemory() {
+        if (cleaning) return;
+        cleaning = true;
+        Toast.makeText(this, R.string.cleaning, Toast.LENGTH_SHORT).show();
+        io.execute(() -> {
+            long[] r;
+            try {
+                r = Cleaner.clean();
+            } catch (InterruptedException e) {
+                r = null;
+            }
+            final long[] res = r;
+            ui.post(() -> {
+                cleaning = false;
+                if (res == null) {
+                    Toast.makeText(this, R.string.need_root, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                long freed = res[1] - res[0];
+                String msg = freed >= 20L * 1024 * 1024
+                        ? getString(R.string.cleaned, mb(freed), mb(res[1]))
+                        : getString(R.string.cleaned_nothing, mb(res[1]));
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+            });
+        });
+    }
+
+    private static String mb(long bytes) {
+        if (bytes < 0) return "?";
+        long mb = bytes / (1024 * 1024);
+        return mb >= 1024 ? String.format(java.util.Locale.ROOT, "%.1f ГБ", mb / 1024.0).replace('.', ',') : mb + " МБ";
     }
 }

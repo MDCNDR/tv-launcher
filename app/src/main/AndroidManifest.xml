@@ -59,6 +59,10 @@
             android:name=".InstallReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".SleepReceiver"
+            android:exported="false" />
+
         <activity
             android:name=".AppPickerActivity"
             android:exported="false"

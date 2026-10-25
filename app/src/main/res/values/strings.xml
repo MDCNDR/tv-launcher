@@ -31,4 +31,24 @@
     <string name="update_installing">Установка…</string>
     <string name="update_failed">Обновление не установлено</string>
     <string name="update_need_permission">Разрешите лаунчеру устанавливать приложения</string>
+    <string name="vpn_rule_title">VPN при запуске</string>
+    <string name="vpn_rule_any">Не менять</string>
+    <string name="vpn_rule_on">Включать VPN</string>
+    <string name="vpn_rule_off">Выключать VPN</string>
+    <string name="vpn_rule_menu">VPN при запуске: %1$s</string>
+    <string name="vpn_switching_on">Включаю VPN…</string>
+    <string name="vpn_switching_off">Выключаю VPN…</string>
+    <string name="vpn_switch_failed">VPN не переключился — запускаю как есть</string>
+    <string name="sleep">Таймер сна</string>
+    <string name="sleep_in">Сон через %1$d мин</string>
+    <string name="sleep_title">Выключить приставку через…</string>
+    <string name="sleep_off">Отключить таймер</string>
+    <string name="sleep_set">Приставка уснёт через %1$d мин</string>
+    <string name="sleep_cancelled">Таймер сна отключён</string>
+    <string name="sleep_warn">Через минуту приставка уснёт. Отменить — кнопка с луной на главном экране</string>
+    <string name="need_root">Нужен root: разрешите лаунчеру доступ в запросе Magisk</string>
+    <string name="clean">Очистить память</string>
+    <string name="cleaning">Очищаю память…</string>
+    <string name="cleaned">Освобождено %1$s · свободно %2$s</string>
+    <string name="cleaned_nothing">Фоновых процессов почти не было · свободно %1$s</string>
 </resources>

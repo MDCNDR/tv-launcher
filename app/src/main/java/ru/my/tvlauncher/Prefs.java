@@ -79,6 +79,33 @@ final class Prefs {
         saveFavorites(favs);
     }
 
+    // ---------- VPN по приложениям ----------
+
+    static final int VPN_ANY = 0;   // не трогать
+    static final int VPN_ON = 1;    // включать перед запуском
+    static final int VPN_OFF = 2;   // выключать перед запуском
+
+    int vpnRule(String pkg) {
+        return sp.getInt("vpn_rule_" + pkg, VPN_ANY);
+    }
+
+    void setVpnRule(String pkg, int rule) {
+        if (rule == VPN_ANY) sp.edit().remove("vpn_rule_" + pkg).apply();
+        else sp.edit().putInt("vpn_rule_" + pkg, rule).apply();
+    }
+
+    // ---------- Таймер сна ----------
+
+    /** Время засыпания (System.currentTimeMillis) или 0, если таймер не задан. */
+    long sleepAt() {
+        long t = sp.getLong("sleep_at", 0);
+        return t > System.currentTimeMillis() ? t : 0;
+    }
+
+    void setSleepAt(long t) {
+        sp.edit().putLong("sleep_at", t).apply();
+    }
+
     String city() {
         return sp.getString(KEY_CITY, "Москва");
     }
