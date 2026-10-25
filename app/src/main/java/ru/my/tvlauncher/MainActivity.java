@@ -33,6 +33,8 @@ public class MainActivity extends Activity {
     /** Чуть меньше тика, чтобы проверка шла на каждом тике (раз в 5 минут). */
     private static final long UPDATE_TTL = 4 * MINUTE;
     private static final long VPN_WAIT_MS = 12_000;
+    /** Не чаще одной проверки обновлений за столько мс при нажатиях «Домой». */
+    private static final long HOME_UPDATE_DEBOUNCE_MS = 15_000;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -159,6 +161,7 @@ public class MainActivity extends Activity {
         renderSleep();
         applyNightMode();
         checkPing();
+        checkUpdateOnHome(); // вернулись на главный экран (в т.ч. кнопкой «Домой» из приложения)
         ui.removeCallbacks(refreshTick);
         ui.post(refreshTick);
     }
@@ -182,6 +185,7 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);
         // Кнопка «Домой» на главном экране: вернуть фокус на первое приложение.
         if (favRow.getChildCount() > 0) favRow.getChildAt(0).requestFocus();
+        checkUpdateOnHome();
     }
 
     @SuppressWarnings("deprecation")
@@ -531,6 +535,12 @@ public class MainActivity extends Activity {
     }
 
     // ---------- Обновление лаунчера ----------
+
+    /** «Домой» проверяет обновления сразу, без ожидания 5-минутного тика. */
+    private void checkUpdateOnHome() {
+        if (updating) return;
+        if (System.currentTimeMillis() - updateCheckedAt > HOME_UPDATE_DEBOUNCE_MS) checkUpdate();
+    }
 
     private void checkUpdate() {
         updateCheckedAt = System.currentTimeMillis();
