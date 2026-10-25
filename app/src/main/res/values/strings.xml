@@ -18,4 +18,17 @@
     <string name="remove">Убрать с главного экрана</string>
     <string name="app_info">О приложении</string>
     <string name="cannot_open">Не удалось открыть</string>
+    <string name="change_city">Сменить город</string>
+    <string name="forecast_title">Прогноз · %1$s</string>
+    <string name="forecast_error">Не удалось загрузить прогноз. Проверьте интернет.</string>
+    <string name="vpn">VPN</string>
+    <string name="vpn_on">VPN включён</string>
+    <string name="vpn_off">VPN выключен</string>
+    <string name="vpn_wait">VPN…</string>
+    <string name="vpn_no_response">Happ не ответил — откройте его один раз вручную</string>
+    <string name="update_to">Обновить до %1$s</string>
+    <string name="update_downloading">Загрузка…</string>
+    <string name="update_installing">Установка…</string>
+    <string name="update_failed">Обновление не установлено</string>
+    <string name="update_need_permission">Разрешите лаунчеру устанавливать приложения</string>
 </resources>

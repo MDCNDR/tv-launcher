@@ -2,6 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
+// Номер версии = номер сборки в GitHub Actions (+10, чтобы быть выше ранних ручных версий).
+// Та же формула в .github/workflows/build.yml для version.json.
+def runNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '0') as Integer
+
 android {
     namespace 'ru.my.tvlauncher'
     compileSdk 34
@@ -10,8 +14,8 @@ android {
         applicationId 'ru.my.tvlauncher'
         minSdk 26
         targetSdk 34
-        versionCode 3
-        versionName '1.2'
+        versionCode 10 + runNumber
+        versionName "1.3.${runNumber}"
     }
 
     // Постоянный ключ подписи: обновления ставятся поверх без удаления.

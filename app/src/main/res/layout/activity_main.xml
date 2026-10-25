@@ -59,6 +59,21 @@
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/btn_update"
+                style="@style/Chip"
+                android:drawableStart="@drawable/ic_update"
+                android:drawablePadding="8dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/btn_vpn"
+                style="@style/Chip"
+                android:drawableStart="@drawable/ic_vpn_off"
+                android:drawablePadding="8dp"
+                android:text="@string/vpn"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/btn_wifi"
                 style="@style/Chip"
                 android:text="@string/wifi" />

@@ -45,6 +45,106 @@ final class Weather {
         }
     }
 
+    /** Прогноз на один день. Неизвестные числа — NaN, вероятность осадков −1. */
+    static final class Day {
+        final java.util.Date date;
+        final double max;
+        final double min;
+        final int precipChance;
+        final double wind;
+        final String description;
+        final int icon;
+
+        Day(java.util.Date date, double max, double min, int precipChance, double wind,
+            String description, int icon) {
+            this.date = date;
+            this.max = max;
+            this.min = min;
+            this.precipChance = precipChance;
+            this.wind = wind;
+            this.description = description;
+            this.icon = icon;
+        }
+    }
+
+    /** Прогноз на 7 дней (Open-Meteo) или на 3 дня (wttr.in), если первый недоступен. */
+    static java.util.List<Day> forecast(double lat, double lon) throws Exception {
+        try {
+            return forecastOpenMeteo(lat, lon);
+        } catch (Exception first) {
+            Net.warn("open-meteo forecast failed", first);
+            try {
+                return forecastWttr(lat, lon);
+            } catch (Exception second) {
+                Net.warn("wttr.in forecast failed", second);
+                second.addSuppressed(first);
+                throw second;
+            }
+        }
+    }
+
+    private static java.util.List<Day> forecastOpenMeteo(double lat, double lon) throws Exception {
+        String url = String.format(Locale.US,
+                "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
+                        + "&daily=weather_code,temperature_2m_max,temperature_2m_min,"
+                        + "precipitation_probability_max,wind_speed_10m_max"
+                        + "&forecast_days=7&wind_speed_unit=ms&timezone=auto",
+                lat, lon);
+        JSONObject daily = new JSONObject(Net.getText(url)).getJSONObject("daily");
+        JSONArray time = daily.getJSONArray("time");
+        JSONArray codes = daily.getJSONArray("weather_code");
+        JSONArray max = daily.optJSONArray("temperature_2m_max");
+        JSONArray min = daily.optJSONArray("temperature_2m_min");
+        JSONArray pop = daily.optJSONArray("precipitation_probability_max");
+        JSONArray wind = daily.optJSONArray("wind_speed_10m_max");
+        java.util.List<Day> out = new java.util.ArrayList<>();
+        for (int i = 0; i < time.length(); i++) {
+            int code = codes.optInt(i, 3);
+            out.add(new Day(parseDay(time.getString(i)),
+                    at(max, i), at(min, i),
+                    pop == null || pop.isNull(i) ? -1 : pop.optInt(i, -1),
+                    at(wind, i),
+                    describe(code), icon(kindWmo(code), true)));
+        }
+        return out;
+    }
+
+    private static java.util.List<Day> forecastWttr(double lat, double lon) throws Exception {
+        String url = String.format(Locale.US, "https://wttr.in/%.4f,%.4f?format=j1&lang=ru", lat, lon);
+        JSONArray days = new JSONObject(Net.getText(url)).getJSONArray("weather");
+        java.util.List<Day> out = new java.util.ArrayList<>();
+        for (int i = 0; i < days.length(); i++) {
+            JSONObject d = days.getJSONObject(i);
+            JSONArray hourly = d.optJSONArray("hourly");
+            JSONObject noon = hourly != null && hourly.length() > 0
+                    ? hourly.getJSONObject(Math.min(4, hourly.length() - 1)) : new JSONObject();
+            String desc = "—";
+            JSONArray ru = noon.optJSONArray("lang_ru");
+            if (ru != null && ru.length() > 0) desc = capitalize(ru.getJSONObject(0).optString("value", "—").trim());
+            int pop = -1;
+            if (hourly != null) {
+                for (int h = 0; h < hourly.length(); h++) {
+                    JSONObject x = hourly.getJSONObject(h);
+                    pop = Math.max(pop, Math.max(x.optInt("chanceofrain", -1), x.optInt("chanceofsnow", -1)));
+                }
+            }
+            double windKmh = noon.optDouble("windspeedKmph", Double.NaN);
+            out.add(new Day(parseDay(d.getString("date")),
+                    d.optDouble("maxtempC", Double.NaN), d.optDouble("mintempC", Double.NaN),
+                    pop, Double.isNaN(windKmh) ? Double.NaN : windKmh / 3.6,
+                    desc, icon(kindWwo(noon.optInt("weatherCode", 116)), true)));
+        }
+        return out;
+    }
+
+    private static double at(JSONArray a, int i) {
+        return a == null || a.isNull(i) ? Double.NaN : a.optDouble(i, Double.NaN);
+    }
+
+    private static java.util.Date parseDay(String yyyyMmDd) throws java.text.ParseException {
+        return new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(yyyyMmDd);
+    }
+
     private enum Kind { CLEAR, PARTLY, CLOUDY, FOG, RAIN, SNOW, THUNDER }
 
     private Weather() {}

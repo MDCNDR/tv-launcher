@@ -30,6 +30,8 @@ public class MainActivity extends Activity {
     private static final long WEATHER_TTL = 30 * MINUTE;
     private static final long RATES_TTL = 3 * 60 * MINUTE;
     private static final long WALLPAPER_TTL = 60 * MINUTE;
+    private static final long UPDATE_TTL = 6 * 60 * MINUTE;
+    private static final long VPN_WAIT_MS = 12_000;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -57,6 +59,21 @@ public class MainActivity extends Activity {
     private long weatherLoadedAt;
     private long ratesLoadedAt;
     private long wallpaperLoadedAt;
+    private long updateCheckedAt;
+    private String weatherCity;
+
+    private Vpn vpn;
+    private TextView vpnBtn;
+    /** Ожидаемое состояние после нажатия, пока Happ подключается/отключается. */
+    private Boolean vpnTarget;
+    private final Runnable vpnTimeout = () -> {
+        vpnTarget = null;
+        renderVpn(vpn.isActive());
+    };
+
+    private TextView updateBtn;
+    private Updater.Info update;
+    private boolean updating;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,7 +93,21 @@ public class MainActivity extends Activity {
         findViewById(R.id.btn_wifi).setOnClickListener(v -> openSettings(Settings.ACTION_WIFI_SETTINGS));
         findViewById(R.id.btn_bluetooth).setOnClickListener(v -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS));
         findViewById(R.id.btn_settings).setOnClickListener(v -> openSettings(Settings.ACTION_SETTINGS));
-        weatherBlock.setOnClickListener(v -> askCity());
+        weatherBlock.setOnClickListener(v -> startActivity(new Intent(this, ForecastActivity.class)));
+        weatherBlock.setOnLongClickListener(v -> {
+            CityDialog.show(this, prefs, () -> {
+                weatherLoadedAt = 0;
+                loadWeather();
+            });
+            return true;
+        });
+
+        vpn = new Vpn(this);
+        vpnBtn = findViewById(R.id.btn_vpn);
+        vpnBtn.setOnClickListener(v -> toggleVpn());
+
+        updateBtn = findViewById(R.id.btn_update);
+        updateBtn.setOnClickListener(v -> installUpdate());
     }
 
     @Override
@@ -84,6 +115,13 @@ public class MainActivity extends Activity {
         super.onResume();
         resumed = true;
         buildFavorites();
+        if (!prefs.city().equals(weatherCity)) weatherLoadedAt = 0;
+        if (Vpn.isHappInstalled(this)) {
+            vpnBtn.setVisibility(View.VISIBLE);
+            vpn.start(this::renderVpn);
+        } else {
+            vpnBtn.setVisibility(View.GONE);
+        }
         ui.removeCallbacks(refreshTick);
         ui.post(refreshTick);
     }
@@ -93,6 +131,7 @@ public class MainActivity extends Activity {
         super.onPause();
         resumed = false;
         ui.removeCallbacks(refreshTick);
+        vpn.stop();
     }
 
     @Override
@@ -225,6 +264,7 @@ public class MainActivity extends Activity {
         if (now - weatherLoadedAt > WEATHER_TTL) loadWeather();
         if (now - ratesLoadedAt > RATES_TTL) loadRates();
         if (now - wallpaperLoadedAt > WALLPAPER_TTL) loadWallpaper();
+        if (now - updateCheckedAt > UPDATE_TTL) checkUpdate();
     }
 
     private void loadWeather() {
@@ -242,6 +282,7 @@ public class MainActivity extends Activity {
             ui.post(() -> {
                 if (w != null) {
                     showWeather(w, city);
+                    weatherCity = city;
                     weatherLoadedAt = System.currentTimeMillis();
                 } else if (weatherLoadedAt == 0) {
                     weatherIcon.setVisibility(View.INVISIBLE);
@@ -311,56 +352,107 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void askCity() {
-        EditText input = new EditText(this);
-        input.setSingleLine(true);
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-        input.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        input.setText(prefs.city());
-        input.setSelectAllOnFocus(true);
-        int pad = Tiles.dp(this, 20);
 
-        LinearLayout box = new LinearLayout(this);
-        box.setPadding(pad, pad / 2, pad, 0);
-        box.addView(input, new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+    // ---------- VPN (Happ) ----------
 
-        AlertDialog dialog = new AlertDialog.Builder(this, R.style.Dialog)
-                .setTitle(R.string.city_title)
-                .setView(box)
-                .setPositiveButton(R.string.ok, (d, w) -> findCity(input.getText().toString()))
-                .setNegativeButton(R.string.cancel, null)
-                .create();
-        input.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                dialog.dismiss();
-                findCity(input.getText().toString());
-                return true;
-            }
-            return false;
-        });
-        dialog.show();
+    private void toggleVpn() {
+        if (vpnTarget != null) return; // уже ждём ответа
+        boolean enable = !vpn.isActive();
+        if (!vpn.request(enable)) {
+            Toast.makeText(this, R.string.vpn_no_response, Toast.LENGTH_LONG).show();
+            return;
+        }
+        vpnTarget = enable;
+        renderVpn(vpn.isActive());
+        ui.removeCallbacks(vpnTimeout);
+        ui.postDelayed(vpnTimeout, VPN_WAIT_MS);
     }
 
-    private void findCity(String query) {
-        if (query.trim().isEmpty()) return;
-        weatherDesc.setText(R.string.weather_loading);
+    private void renderVpn(boolean active) {
+        if (vpnTarget != null && vpnTarget == active) {
+            vpnTarget = null;
+            ui.removeCallbacks(vpnTimeout);
+        }
+        int icon;
+        int label;
+        if (vpnTarget != null) {
+            icon = R.drawable.ic_vpn_wait;
+            label = R.string.vpn_wait;
+        } else if (active) {
+            icon = R.drawable.ic_vpn_on;
+            label = R.string.vpn_on;
+        } else {
+            icon = R.drawable.ic_vpn_off;
+            label = R.string.vpn_off;
+        }
+        vpnBtn.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
+        vpnBtn.setText(vpnTarget != null ? getString(R.string.vpn_wait) : getString(R.string.vpn));
+        vpnBtn.setContentDescription(getString(label));
+    }
+
+    // ---------- Обновление лаунчера ----------
+
+    private void checkUpdate() {
+        updateCheckedAt = System.currentTimeMillis();
         io.execute(() -> {
-            Weather.Place place = null;
+            Updater.Info info;
             try {
-                place = Weather.geocode(query);
-            } catch (Exception ignored) {
+                info = Updater.check(getApplicationContext());
+            } catch (Exception e) {
+                Net.warn("update check failed", e);
+                ui.post(() -> updateCheckedAt = System.currentTimeMillis() - UPDATE_TTL + 30 * MINUTE);
+                return;
             }
-            final Weather.Place found = place;
+            final Updater.Info found = info;
             ui.post(() -> {
-                if (found == null) {
-                    Toast.makeText(this, R.string.city_not_found, Toast.LENGTH_SHORT).show();
-                } else {
-                    prefs.setCity(found.name, found.lat, found.lon);
-                }
-                weatherLoadedAt = 0;
-                loadWeather();
+                update = found;
+                if (!updating) renderUpdate();
             });
+        });
+    }
+
+    private void renderUpdate() {
+        if (update == null) {
+            updateBtn.setVisibility(View.GONE);
+            return;
+        }
+        updateBtn.setVisibility(View.VISIBLE);
+        updateBtn.setText(getString(R.string.update_to, update.versionName));
+    }
+
+    private void installUpdate() {
+        if (update == null || updating) return;
+        if (!getPackageManager().canRequestPackageInstalls()) {
+            try {
+                startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:" + getPackageName())));
+            } catch (ActivityNotFoundException e) {
+                // На части TV-прошивок этого экрана нет — разрешение выдаётся через adb.
+            }
+            Toast.makeText(this, R.string.update_need_permission, Toast.LENGTH_LONG).show();
+            return;
+        }
+        updating = true;
+        updateBtn.setText(R.string.update_downloading);
+        io.execute(() -> {
+            try {
+                java.io.File apk = Updater.download(getApplicationContext());
+                ui.post(() -> updateBtn.setText(R.string.update_installing));
+                Updater.install(getApplicationContext(), apk);
+                // Если установку отменили, через минуту кнопка снова станет активной.
+                ui.postDelayed(() -> {
+                    updating = false;
+                    renderUpdate();
+                }, 60_000);
+            } catch (Exception e) {
+                Net.warn("update install failed", e);
+                ui.post(() -> {
+                    updating = false;
+                    renderUpdate();
+                    Toast.makeText(this, getString(R.string.update_failed) + ": " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+            }
         });
     }
 }
