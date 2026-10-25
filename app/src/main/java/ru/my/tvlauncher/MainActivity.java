@@ -63,7 +63,8 @@ public class MainActivity extends Activity {
     private String weatherCity;
 
     private Vpn vpn;
-    private TextView vpnBtn;
+    private ImageView vpnBtn;
+    private TextView topHint;
     /** Ожидаемое состояние после нажатия, пока Happ подключается/отключается. */
     private Boolean vpnTarget;
     private final Runnable vpnTimeout = () -> {
@@ -105,6 +106,19 @@ public class MainActivity extends Activity {
         vpn = new Vpn(this);
         vpnBtn = findViewById(R.id.btn_vpn);
         vpnBtn.setOnClickListener(v -> toggleVpn());
+
+        // Подпись под круглыми кнопками: показывает, что сейчас в фокусе.
+        topHint = findViewById(R.id.top_hint);
+        for (int id : new int[]{R.id.btn_vpn, R.id.btn_wifi, R.id.btn_bluetooth, R.id.btn_settings}) {
+            findViewById(id).setOnFocusChangeListener((v, has) -> {
+                if (has) {
+                    topHint.setText(v.getContentDescription());
+                    topHint.setVisibility(View.VISIBLE);
+                } else if (!isTopButtonFocused()) {
+                    topHint.setVisibility(View.INVISIBLE);
+                }
+            });
+        }
 
         updateBtn = findViewById(R.id.btn_update);
         updateBtn.setOnClickListener(v -> installUpdate());
@@ -385,9 +399,16 @@ public class MainActivity extends Activity {
             icon = R.drawable.ic_vpn_off;
             label = R.string.vpn_off;
         }
-        vpnBtn.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0);
-        vpnBtn.setText(vpnTarget != null ? getString(R.string.vpn_wait) : getString(R.string.vpn));
+        vpnBtn.setImageResource(icon);
         vpnBtn.setContentDescription(getString(label));
+        if (vpnBtn.isFocused()) topHint.setText(getString(label));
+    }
+
+    private boolean isTopButtonFocused() {
+        View f = getCurrentFocus();
+        if (f == null) return false;
+        int id = f.getId();
+        return id == R.id.btn_vpn || id == R.id.btn_wifi || id == R.id.btn_bluetooth || id == R.id.btn_settings;
     }
 
     // ---------- Обновление лаунчера ----------

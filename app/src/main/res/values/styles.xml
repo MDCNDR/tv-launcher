@@ -27,5 +27,17 @@
         <item name="android:textSize">15sp</item>
     </style>
 
+    <!-- Круглая кнопка с иконкой в верхней строке -->
+    <style name="Circle">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:layout_marginStart">12dp</item>
+        <item name="android:padding">11dp</item>
+        <item name="android:background">@drawable/circle_bg</item>
+        <item name="android:focusable">true</item>
+        <item name="android:clickable">true</item>
+        <item name="android:scaleType">fitCenter</item>
+    </style>
+
     <style name="Dialog" parent="@android:style/Theme.DeviceDefault.Dialog.Alert" />
 </resources>
