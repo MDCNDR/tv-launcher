@@ -43,6 +43,14 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    // У зависимостей dadb одинаковые файлы лицензий в META-INF — в APK они не нужны.
+    packaging {
+        resources {
+            excludes += ['META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/DEPENDENCIES',
+                         'META-INF/INDEX.LIST', 'META-INF/*.kotlin_module', 'META-INF/versions/9/previous-compilation-data.bin']
+        }
+    }
+
     lint {
         abortOnError false
         checkReleaseBuilds false
