@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="bg">#0B0C10</color>
+    <color name="chip_fill">#59000000</color>
     <color name="text_primary">#F2F2F2</color>
     <color name="text_secondary">#8A8F99</color>
 

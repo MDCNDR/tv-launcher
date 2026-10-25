@@ -13,6 +13,7 @@ import android.text.InputType;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,20 +24,35 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
 
-    private static final long WEATHER_REFRESH_MS = 30 * 60 * 1000L;
-    private static final long WEATHER_RETRY_MS = 2 * 60 * 1000L;
+    private static final long MINUTE = 60 * 1000L;
+    /** Как часто проверять, не пора ли обновить данные (и повторить после ошибки). */
+    private static final long TICK_MS = 5 * MINUTE;
+    private static final long WEATHER_TTL = 30 * MINUTE;
+    private static final long RATES_TTL = 3 * 60 * MINUTE;
+    private static final long WALLPAPER_TTL = 60 * MINUTE;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newSingleThreadExecutor();
-    private final Runnable weatherTick = this::loadWeather;
+    private final Runnable refreshTick = new Runnable() {
+        @Override
+        public void run() {
+            refreshStale();
+            if (resumed) ui.postDelayed(this, TICK_MS);
+        }
+    };
 
     private Prefs prefs;
     private LinearLayout favRow;
     private TextView weather;
+    private TextView rates;
+    private ImageView wallpaper;
+    private TextView wallpaperCaption;
     /** Пакет плитки, на которую вернуть фокус после перестройки строки. */
     private String focusPkg;
     private boolean resumed;
     private long weatherLoadedAt;
+    private long ratesLoadedAt;
+    private long wallpaperLoadedAt;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +61,9 @@ public class MainActivity extends Activity {
         prefs = new Prefs(this);
         favRow = findViewById(R.id.fav_row);
         weather = findViewById(R.id.weather);
+        rates = findViewById(R.id.rates);
+        wallpaper = findViewById(R.id.wallpaper);
+        wallpaperCaption = findViewById(R.id.wallpaper_caption);
 
         findViewById(R.id.btn_wifi).setOnClickListener(v -> openSettings(Settings.ACTION_WIFI_SETTINGS));
         findViewById(R.id.btn_bluetooth).setOnClickListener(v -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS));
@@ -57,16 +76,15 @@ public class MainActivity extends Activity {
         super.onResume();
         resumed = true;
         buildFavorites();
-        ui.removeCallbacks(weatherTick);
-        long age = System.currentTimeMillis() - weatherLoadedAt;
-        ui.postDelayed(weatherTick, Math.max(0, WEATHER_REFRESH_MS - age));
+        ui.removeCallbacks(refreshTick);
+        ui.post(refreshTick);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         resumed = false;
-        ui.removeCallbacks(weatherTick);
+        ui.removeCallbacks(refreshTick);
     }
 
     @Override
@@ -191,7 +209,15 @@ public class MainActivity extends Activity {
         }
     }
 
-    // ---------- Погода ----------
+    // ---------- Погода, курсы, фон ----------
+
+    /** Обновляет то, что устарело. Неудачные загрузки повторятся на следующем тике. */
+    private void refreshStale() {
+        long now = System.currentTimeMillis();
+        if (now - weatherLoadedAt > WEATHER_TTL) loadWeather();
+        if (now - ratesLoadedAt > RATES_TTL) loadRates();
+        if (now - wallpaperLoadedAt > WALLPAPER_TTL) loadWallpaper();
+    }
 
     private void loadWeather() {
         final String city = prefs.city();
@@ -199,22 +225,58 @@ public class MainActivity extends Activity {
         final double lon = prefs.lon();
         io.execute(() -> {
             String text;
-            boolean ok;
             try {
                 text = Weather.current(lat, lon) + " · " + city;
-                ok = true;
             } catch (Exception ex) {
-                text = getString(R.string.weather_error);
-                ok = false;
+                text = null;
             }
             final String shown = text;
-            final boolean success = ok;
-            final long next = ok ? WEATHER_REFRESH_MS : WEATHER_RETRY_MS;
             ui.post(() -> {
-                weather.setText(shown);
-                weatherLoadedAt = success ? System.currentTimeMillis() : 0;
-                ui.removeCallbacks(weatherTick);
-                if (resumed) ui.postDelayed(weatherTick, next);
+                if (shown != null) {
+                    weather.setText(shown);
+                    weatherLoadedAt = System.currentTimeMillis();
+                } else if (weatherLoadedAt == 0) {
+                    weather.setText(R.string.weather_error);
+                }
+            });
+        });
+    }
+
+    private void loadRates() {
+        io.execute(() -> {
+            CharSequence text;
+            try {
+                text = Rates.load();
+            } catch (Exception ex) {
+                Net.warn("rates failed", ex);
+                text = null;
+            }
+            final CharSequence shown = text;
+            ui.post(() -> {
+                if (shown == null) return;
+                rates.setText(shown);
+                ratesLoadedAt = System.currentTimeMillis();
+            });
+        });
+    }
+
+    private void loadWallpaper() {
+        io.execute(() -> {
+            Wallpaper.Result result;
+            try {
+                result = Wallpaper.load(getApplicationContext());
+            } catch (Exception ex) {
+                Net.warn("wallpaper failed", ex);
+                result = null;
+            }
+            final Wallpaper.Result r = result;
+            ui.post(() -> {
+                if (r == null) return;
+                boolean first = wallpaper.getDrawable() == null;
+                wallpaper.setImageBitmap(r.bitmap);
+                wallpaperCaption.setText(r.caption);
+                if (first) wallpaper.animate().alpha(1f).setDuration(600).start();
+                wallpaperLoadedAt = System.currentTimeMillis();
             });
         });
     }
@@ -266,7 +328,7 @@ public class MainActivity extends Activity {
                 } else {
                     prefs.setCity(found.name, found.lat, found.lon);
                 }
-                ui.removeCallbacks(weatherTick);
+                weatherLoadedAt = 0;
                 loadWeather();
             });
         });
