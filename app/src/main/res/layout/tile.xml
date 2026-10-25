@@ -1,39 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="148dp"
-    android:layout_height="wrap_content"
-    android:layout_marginEnd="18dp"
-    android:layout_marginBottom="18dp"
+<!-- Плитка приложения: только название, без баннеров и иконок -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/label"
+    android:layout_width="wrap_content"
+    android:layout_height="64dp"
+    android:layout_marginEnd="14dp"
+    android:layout_marginBottom="14dp"
+    android:background="@drawable/tile_bg"
     android:clickable="true"
+    android:ellipsize="end"
     android:focusable="true"
-    android:gravity="center_horizontal"
-    android:orientation="vertical">
-
-    <FrameLayout
-        android:layout_width="148dp"
-        android:layout_height="83dp"
-        android:background="@drawable/tile_bg"
-        android:duplicateParentState="true"
-        android:padding="3dp">
-
-        <ImageView
-            android:id="@+id/image"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:duplicateParentState="true"
-            android:importantForAccessibility="no"
-            android:scaleType="fitCenter" />
-    </FrameLayout>
-
-    <TextView
-        android:id="@+id/label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:duplicateParentState="true"
-        android:ellipsize="end"
-        android:gravity="center"
-        android:maxLines="1"
-        android:textColor="@color/label_text"
-        android:textSize="14sp" />
-</LinearLayout>
+    android:fontFamily="sans-serif-medium"
+    android:gravity="center"
+    android:maxLines="1"
+    android:minWidth="128dp"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:textColor="@color/chip_text"
+    android:textSize="19sp" />

@@ -30,7 +30,8 @@ public class MainActivity extends Activity {
     private static final long WEATHER_TTL = 30 * MINUTE;
     private static final long RATES_TTL = 3 * 60 * MINUTE;
     private static final long WALLPAPER_TTL = 60 * MINUTE;
-    private static final long UPDATE_TTL = 6 * 60 * MINUTE;
+    /** Чуть меньше тика, чтобы проверка шла на каждом тике (раз в 5 минут). */
+    private static final long UPDATE_TTL = 4 * MINUTE;
     private static final long VPN_WAIT_MS = 12_000;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -182,7 +183,7 @@ public class MainActivity extends Activity {
         for (String pkg : favs) {
             Apps.Entry e = Apps.forPackage(this, pkg);
             if (e == null) continue; // приложение удалили — просто не показываем
-            View tile = Tiles.make(this, favRow, e.image, e.isBanner, e.label);
+            View tile = Tiles.make(this, favRow, e.label);
             tile.setTag(pkg);
             tile.setOnClickListener(v -> launch(pkg));
             tile.setOnLongClickListener(v -> {
@@ -193,7 +194,7 @@ public class MainActivity extends Activity {
             if (pkg.equals(focusPkg)) toFocus = tile;
         }
 
-        View add = Tiles.make(this, favRow, getDrawable(R.drawable.ic_add), false, getString(R.string.add_apps));
+        View add = Tiles.make(this, favRow, "+   " + getString(R.string.add_apps));
         add.setOnClickListener(v -> startActivity(new Intent(this, AppPickerActivity.class)));
         favRow.addView(add);
 
@@ -421,8 +422,7 @@ public class MainActivity extends Activity {
                 info = Updater.check(getApplicationContext());
             } catch (Exception e) {
                 Net.warn("update check failed", e);
-                ui.post(() -> updateCheckedAt = System.currentTimeMillis() - UPDATE_TTL + 30 * MINUTE);
-                return;
+                return; // повторим на следующем тике
             }
             final Updater.Info found = info;
             ui.post(() -> {

@@ -2,7 +2,6 @@ package ru.my.tvlauncher;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.GridLayout;
 import android.widget.TextView;
 
@@ -24,21 +23,22 @@ public class AppPickerActivity extends Activity {
         GridLayout grid = findViewById(R.id.grid);
         List<Apps.Entry> apps = Apps.all(this);
         for (Apps.Entry e : apps) {
-            View tile = Tiles.make(this, grid, e.image, e.isBanner, e.label);
-            TextView label = tile.findViewById(R.id.label);
-            render(tile, label, e);
+            TextView tile = Tiles.make(this, grid, e.label);
+            GridLayout.LayoutParams lp = (GridLayout.LayoutParams) tile.getLayoutParams();
+            lp.width = Tiles.dp(this, 150);
+            render(tile, e);
             tile.setOnClickListener(v -> {
                 prefs.toggleFavorite(e.pkg);
-                render(tile, label, e);
+                render(tile, e);
             });
             grid.addView(tile);
         }
         if (grid.getChildCount() > 0) grid.getChildAt(0).requestFocus();
     }
 
-    private void render(View tile, TextView label, Apps.Entry e) {
+    private void render(TextView tile, Apps.Entry e) {
         boolean fav = prefs.isFavorite(e.pkg);
-        label.setText(fav ? MARK + e.label : e.label);
-        tile.findViewById(R.id.image).setAlpha(fav ? 1f : 0.45f);
+        tile.setText(fav ? MARK + e.label : e.label);
+        tile.setAlpha(fav ? 1f : 0.6f);
     }
 }
