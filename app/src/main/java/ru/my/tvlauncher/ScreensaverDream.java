@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Заставка в стиле лаунчера: фото Bing за неделю сменяются каждые 40 секунд
+ * Заставка в стиле лаунчера: спутниковые снимки Google Earth View сменяются каждые 40 секунд
  * с плавным переходом и медленным приближением; часы, дата и последняя погода.
  * Ночью (23–7) всё приглушено. Часы понемногу смещаются, чтобы не выжигать экран.
  */
@@ -86,8 +86,16 @@ public class ScreensaverDream extends DreamService {
             BitmapFactory.Options o = new BitmapFactory.Options();
             o.inPreferredConfig = Bitmap.Config.RGB_565;
             Bitmap b = BitmapFactory.decodeFile(file.getAbsolutePath(), o);
+            String caption = Gallery.caption(getApplicationContext(), file);
             ui.post(() -> {
-                if (running && b != null) crossfadeTo(b);
+                if (running && b != null) {
+                    crossfadeTo(b);
+                    TextView cap = findViewById(R.id.dream_caption);
+                    cap.animate().alpha(0f).setDuration(FADE_MS / 2).withEndAction(() -> {
+                        cap.setText(caption);
+                        cap.animate().alpha(1f).setDuration(FADE_MS / 2).start();
+                    }).start();
+                }
                 if (running) ui.postDelayed(nextSlide, SLIDE_MS);
             });
         }, "dream-decode").start();

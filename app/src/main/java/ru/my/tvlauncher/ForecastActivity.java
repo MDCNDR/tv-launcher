@@ -137,7 +137,10 @@ public class ForecastActivity extends Activity {
     /** Фон — то же фото дня, что на главном экране (если уже скачано). */
     private void loadBackground() {
         ImageView bg = findViewById(R.id.wallpaper);
-        File img = new File(getFilesDir(), "wallpaper.jpg");
+        String last = getSharedPreferences("wallpaper", MODE_PRIVATE).getString("last_id", null);
+        EarthView.Item item = last == null ? null : EarthView.byId(this, last);
+        if (item == null) return;
+        File img = EarthView.file(this, item);
         if (!img.exists()) return;
         new Thread(() -> {
             BitmapFactory.Options o = new BitmapFactory.Options();

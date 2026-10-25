@@ -1,19 +1,12 @@
 package ru.my.tvlauncher;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
-import org.json.JSONObject;
-
 import java.io.File;
-import java.io.FileOutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
-/** Фон главного экрана: «фото дня» Bing, обновляется раз в сутки и хранится на устройстве. */
+/** Фон главного экрана: снимок дня Google Earth View (каждый день новый). */
 final class Wallpaper {
 
     static final class Result {
@@ -26,51 +19,43 @@ final class Wallpaper {
         }
     }
 
-    private static final String META =
-            "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=ru-RU";
-
     private Wallpaper() {}
 
-    /** Вызывать не из UI-потока. Если сети нет, отдаёт вчерашнюю картинку. */
+    /** Вызывать не из UI-потока. Если сети нет, отдаёт последний скачанный снимок. */
     static Result load(Context c) throws Exception {
-        SharedPreferences sp = c.getSharedPreferences("wallpaper", Context.MODE_PRIVATE);
-        File img = new File(c.getFilesDir(), "wallpaper.jpg");
-        String today = new SimpleDateFormat("yyyyMMdd", Locale.US).format(new Date());
-
-        if (!img.exists() || !today.equals(sp.getString("day", null))) {
+        long now = System.currentTimeMillis();
+        long today = (now + java.util.TimeZone.getDefault().getOffset(now)) / 86_400_000L;
+        EarthView.Item item = EarthView.ofTheDay(c, today);
+        File img = null;
+        String caption = "";
+        if (item != null) {
             try {
-                JSONObject meta = new JSONObject(Net.getText(META))
-                        .getJSONArray("images").getJSONObject(0);
-                String url = "https://www.bing.com" + meta.getString("urlbase") + "_1920x1080.jpg";
-                byte[] data = Net.getBytes(url);
-                File tmp = new File(c.getFilesDir(), "wallpaper.tmp");
-                try (FileOutputStream out = new FileOutputStream(tmp)) {
-                    out.write(data);
-                }
-                if (!tmp.renameTo(img)) throw new IllegalStateException("rename failed");
-                sp.edit()
-                        .putString("day", today)
-                        .putString("caption", cleanCaption(meta.optString("copyright", "")))
-                        .apply();
+                img = EarthView.fetch(c, item);
+                caption = item.caption();
+                c.getSharedPreferences("wallpaper", Context.MODE_PRIVATE).edit()
+                        .putString("last_id", item.id).apply();
             } catch (Exception e) {
-                Net.warn("wallpaper download failed", e);
-                if (!img.exists()) throw e;
+                Net.warn("earth view of the day failed", e);
             }
         }
+        if (img == null) { // нет сети — берём вчерашний
+            String last = c.getSharedPreferences("wallpaper", Context.MODE_PRIVATE).getString("last_id", null);
+            EarthView.Item prev = last == null ? null : EarthView.byId(c, last);
+            if (prev != null && EarthView.file(c, prev).exists()) {
+                img = EarthView.file(c, prev);
+                caption = prev.caption();
+            }
+        }
+        if (img == null) throw new IllegalStateException("no wallpaper yet");
 
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inPreferredConfig = Bitmap.Config.RGB_565;
         Bitmap bitmap = BitmapFactory.decodeFile(img.getAbsolutePath(), opts);
         if (bitmap == null) {
+            //noinspection ResultOfMethodCallIgnored
             img.delete();
             throw new IllegalStateException("cannot decode wallpaper");
         }
-        return new Result(bitmap, sp.getString("caption", ""));
-    }
-
-    /** «Озеро Байкал, Россия (© Автор/Getty Images)» → «Озеро Байкал, Россия». */
-    private static String cleanCaption(String s) {
-        int i = s.indexOf(" (©");
-        return (i > 0 ? s.substring(0, i) : s).trim();
+        return new Result(bitmap, caption);
     }
 }
