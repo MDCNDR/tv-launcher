@@ -33,8 +33,8 @@ jobs:
       - name: Report build errors
         if: failure()
         run: |
-          grep -E "error:|e: |What went wrong|Could not|Duplicate class|Cannot|> " build.log \
-            | grep -v "^\s*at " | head -25 | while IFS= read -r line; do
+          grep -E -A3 "error:|e: |What went wrong|Could not|Duplicate class|Cannot find|FAILED" build.log \
+            | grep -v -E "^\s*at |> Task .* (UP-TO-DATE|NO-SOURCE)$|^--$" | head -40 | while IFS= read -r line; do
               echo "::error::${line}"
             done
 
