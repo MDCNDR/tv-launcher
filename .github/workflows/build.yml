@@ -26,7 +26,17 @@ jobs:
           gradle-version: '8.9'
 
       - name: Build
-        run: gradle assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon --stacktrace 2>&1 | tee build.log
+
+      - name: Report build errors
+        if: failure()
+        run: |
+          grep -E "error:|e: |What went wrong|Could not|Duplicate class|Cannot|> " build.log \
+            | grep -v "^\s*at " | head -25 | while IFS= read -r line; do
+              echo "::error::${line}"
+            done
 
       - name: Rename APK and write version.json
         run: |
