@@ -44,7 +44,7 @@
             android:ellipsize="end"
             android:gravity="center_vertical"
             android:maxLines="1"
-            android:maxWidth="320dp"
+            android:maxWidth="420dp"
             android:shadowColor="#99000000"
             android:shadowRadius="6"
             android:textColor="#B3FFFFFF"
@@ -57,11 +57,6 @@
             android:layout_gravity="top|end"
             android:gravity="center_vertical"
             android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/weather"
-                style="@style/Chip"
-                android:text="@string/weather_loading" />
 
             <TextView
                 android:id="@+id/btn_wifi"
@@ -79,52 +74,133 @@
                 android:text="@string/settings" />
         </LinearLayout>
 
-        <!-- Часы, дата, курсы валют -->
+        <!-- Часы, дата, курсы валют | погода -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start|center_vertical"
             android:layout_marginBottom="40dp"
-            android:orientation="vertical">
+            android:clipChildren="false"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <TextClock
-                android:id="@+id/clock"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-thin"
-                android:format12Hour="HH:mm"
-                android:format24Hour="HH:mm"
-                android:includeFontPadding="false"
-                android:shadowColor="#80000000"
-                android:shadowRadius="12"
-                android:textColor="@color/text_primary"
-                android:textSize="120sp" />
+                android:orientation="vertical">
 
-            <TextClock
-                android:id="@+id/date"
+                <TextClock
+                    android:id="@+id/clock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-thin"
+                    android:format12Hour="HH:mm"
+                    android:format24Hour="HH:mm"
+                    android:includeFontPadding="false"
+                    android:shadowColor="#80000000"
+                    android:shadowRadius="12"
+                    android:textColor="@color/text_primary"
+                    android:textSize="120sp" />
+
+                <TextClock
+                    android:id="@+id/date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginTop="4dp"
+                    android:fontFamily="sans-serif-light"
+                    android:format12Hour="EEEE, d MMMM"
+                    android:format24Hour="EEEE, d MMMM"
+                    android:shadowColor="#80000000"
+                    android:shadowRadius="8"
+                    android:textColor="#D9FFFFFF"
+                    android:textSize="26sp" />
+
+                <TextView
+                    android:id="@+id/rates"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginTop="14dp"
+                    android:fontFamily="sans-serif"
+                    android:shadowColor="#80000000"
+                    android:shadowRadius="8"
+                    android:textColor="#D9FFFFFF"
+                    android:textSize="20sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="150dp"
+                android:layout_marginStart="44dp"
+                android:background="#40FFFFFF" />
+
+            <!-- Погода: ОК — сменить город -->
+            <LinearLayout
+                android:id="@+id/weather_block"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:layout_marginTop="4dp"
-                android:fontFamily="sans-serif-light"
-                android:format12Hour="EEEE, d MMMM"
-                android:format24Hour="EEEE, d MMMM"
-                android:shadowColor="#80000000"
-                android:shadowRadius="8"
-                android:textColor="#D9FFFFFF"
-                android:textSize="26sp" />
+                android:layout_marginStart="24dp"
+                android:background="@drawable/weather_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="20dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="24dp"
+                android:paddingBottom="14dp">
 
-            <TextView
-                android:id="@+id/rates"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:layout_marginTop="14dp"
-                android:fontFamily="sans-serif"
-                android:shadowColor="#80000000"
-                android:shadowRadius="8"
-                android:textColor="#D9FFFFFF"
-                android:textSize="20sp" />
+                <ImageView
+                    android:id="@+id/weather_icon"
+                    android:layout_width="84dp"
+                    android:layout_height="84dp"
+                    android:importantForAccessibility="no"
+                    android:visibility="invisible" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/weather_temp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-thin"
+                        android:includeFontPadding="false"
+                        android:shadowColor="#80000000"
+                        android:shadowRadius="10"
+                        android:text="—"
+                        android:textColor="@color/text_primary"
+                        android:textSize="64sp" />
+
+                    <TextView
+                        android:id="@+id/weather_desc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif-light"
+                        android:maxWidth="300dp"
+                        android:shadowColor="#80000000"
+                        android:shadowRadius="8"
+                        android:text="@string/weather_loading"
+                        android:textColor="#F2FFFFFF"
+                        android:textSize="20sp" />
+
+                    <TextView
+                        android:id="@+id/weather_details"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:maxWidth="300dp"
+                        android:shadowColor="#80000000"
+                        android:shadowRadius="8"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="15sp" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Избранные приложения -->

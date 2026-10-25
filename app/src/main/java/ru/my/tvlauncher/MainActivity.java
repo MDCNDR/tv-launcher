@@ -43,7 +43,11 @@ public class MainActivity extends Activity {
 
     private Prefs prefs;
     private LinearLayout favRow;
-    private TextView weather;
+    private View weatherBlock;
+    private ImageView weatherIcon;
+    private TextView weatherTemp;
+    private TextView weatherDesc;
+    private TextView weatherDetails;
     private TextView rates;
     private ImageView wallpaper;
     private TextView wallpaperCaption;
@@ -60,7 +64,11 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         prefs = new Prefs(this);
         favRow = findViewById(R.id.fav_row);
-        weather = findViewById(R.id.weather);
+        weatherBlock = findViewById(R.id.weather_block);
+        weatherIcon = findViewById(R.id.weather_icon);
+        weatherTemp = findViewById(R.id.weather_temp);
+        weatherDesc = findViewById(R.id.weather_desc);
+        weatherDetails = findViewById(R.id.weather_details);
         rates = findViewById(R.id.rates);
         wallpaper = findViewById(R.id.wallpaper);
         wallpaperCaption = findViewById(R.id.wallpaper_caption);
@@ -68,7 +76,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.btn_wifi).setOnClickListener(v -> openSettings(Settings.ACTION_WIFI_SETTINGS));
         findViewById(R.id.btn_bluetooth).setOnClickListener(v -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS));
         findViewById(R.id.btn_settings).setOnClickListener(v -> openSettings(Settings.ACTION_SETTINGS));
-        weather.setOnClickListener(v -> askCity());
+        weatherBlock.setOnClickListener(v -> askCity());
     }
 
     @Override
@@ -224,22 +232,44 @@ public class MainActivity extends Activity {
         final double lat = prefs.lat();
         final double lon = prefs.lon();
         io.execute(() -> {
-            String text;
+            Weather.Now now;
             try {
-                text = Weather.current(lat, lon) + " · " + city;
+                now = Weather.current(lat, lon);
             } catch (Exception ex) {
-                text = null;
+                now = null;
             }
-            final String shown = text;
+            final Weather.Now w = now;
             ui.post(() -> {
-                if (shown != null) {
-                    weather.setText(shown);
+                if (w != null) {
+                    showWeather(w, city);
                     weatherLoadedAt = System.currentTimeMillis();
                 } else if (weatherLoadedAt == 0) {
-                    weather.setText(R.string.weather_error);
+                    weatherIcon.setVisibility(View.INVISIBLE);
+                    weatherTemp.setText("—");
+                    weatherDesc.setText(R.string.weather_error);
+                    weatherDetails.setText(city);
                 }
             });
         });
+    }
+
+    private void showWeather(Weather.Now w, String city) {
+        weatherIcon.setImageResource(w.icon);
+        weatherIcon.setVisibility(View.VISIBLE);
+        weatherTemp.setText(Weather.degrees(w.temp));
+        weatherDesc.setText(w.description + " · " + city);
+
+        StringBuilder d = new StringBuilder();
+        if (!Double.isNaN(w.feels)) d.append("Ощущается ").append(Weather.degrees(w.feels));
+        if (!Double.isNaN(w.max) && !Double.isNaN(w.min)) {
+            if (d.length() > 0) d.append("\n");
+            d.append("↑ ").append(Weather.degrees(w.max)).append("   ↓ ").append(Weather.degrees(w.min));
+        }
+        if (!Double.isNaN(w.wind)) {
+            d.append(d.length() > 0 ? "   ·   " : "").append("ветер ").append(Math.round(w.wind)).append(" м/с");
+        }
+        weatherDetails.setText(d);
+        weatherDetails.setVisibility(d.length() > 0 ? View.VISIBLE : View.GONE);
     }
 
     private void loadRates() {
@@ -314,7 +344,7 @@ public class MainActivity extends Activity {
 
     private void findCity(String query) {
         if (query.trim().isEmpty()) return;
-        weather.setText(R.string.weather_loading);
+        weatherDesc.setText(R.string.weather_loading);
         io.execute(() -> {
             Weather.Place place = null;
             try {
