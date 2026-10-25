@@ -53,26 +53,27 @@
             <TextClock
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-thin"
-                android:format12Hour="HH:mm"
-                android:format24Hour="HH:mm"
-                android:includeFontPadding="false"
-                android:shadowColor="#99000000"
-                android:shadowRadius="14"
-                android:textColor="#F2FFFFFF"
-                android:textSize="96sp" />
-
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:fontFamily="sans-serif-light"
+                android:fontFamily="sans-serif-medium"
                 android:format12Hour="EEEE, d MMMM"
                 android:format24Hour="EEEE, d MMMM"
                 android:shadowColor="#99000000"
                 android:shadowRadius="10"
-                android:textColor="#D9FFFFFF"
+                android:textColor="#E6FFFFFF"
                 android:textSize="22sp" />
+
+            <TextClock
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:format12Hour="H:mm"
+                android:format24Hour="H:mm"
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.03"
+                android:shadowColor="#99000000"
+                android:shadowRadius="16"
+                android:textColor="#FFFFFFFF"
+                android:textSize="110sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -100,7 +101,7 @@
                     android:id="@+id/dream_weather_temp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-thin"
+                    android:fontFamily="sans-serif-light"
                     android:includeFontPadding="false"
                     android:shadowColor="#99000000"
                     android:shadowRadius="10"

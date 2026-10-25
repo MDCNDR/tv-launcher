@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
     private TextView weatherTemp;
     private TextView weatherDesc;
     private TextView weatherDetails;
+    private TextView weatherCityView;
     private TextView rates;
     private ImageView wallpaper;
     private TextView wallpaperCaption;
@@ -101,6 +102,8 @@ public class MainActivity extends Activity {
         weatherTemp = findViewById(R.id.weather_temp);
         weatherDesc = findViewById(R.id.weather_desc);
         weatherDetails = findViewById(R.id.weather_details);
+        weatherCityView = findViewById(R.id.weather_city);
+        weatherCityView.setText(prefs.city());
         rates = findViewById(R.id.rates);
         wallpaper = findViewById(R.id.wallpaper);
         wallpaperCaption = findViewById(R.id.wallpaper_caption);
@@ -418,29 +421,34 @@ public class MainActivity extends Activity {
                     weatherIcon.setVisibility(View.INVISIBLE);
                     weatherTemp.setText("—");
                     weatherDesc.setText(R.string.weather_error);
-                    weatherDetails.setText(city);
+                    weatherDetails.setText("");
+                    weatherCityView.setText(city);
                 }
             });
         });
     }
 
     private void showWeather(Weather.Now w, String city) {
+        weatherCityView.setText(city);
         weatherIcon.setImageResource(w.icon);
         weatherIcon.setVisibility(View.VISIBLE);
         weatherTemp.setText(Weather.degrees(w.temp));
-        weatherDesc.setText(w.description + " · " + city);
+        weatherDesc.setText(w.description);
         prefs.saveWeather(Weather.degrees(w.temp), w.description + " · " + city,
                 getResources().getResourceEntryName(w.icon));
 
+        // Как в виджете погоды iOS: «Макс.: +14°, мин.: +6°», ниже — ощущается и ветер.
         StringBuilder d = new StringBuilder();
-        if (!Double.isNaN(w.feels)) d.append("Ощущается ").append(Weather.degrees(w.feels));
         if (!Double.isNaN(w.max) && !Double.isNaN(w.min)) {
-            if (d.length() > 0) d.append("\n");
-            d.append("↑ ").append(Weather.degrees(w.max)).append("   ↓ ").append(Weather.degrees(w.min));
+            d.append("Макс.: ").append(Weather.degrees(w.max))
+                    .append(", мин.: ").append(Weather.degrees(w.min));
         }
+        StringBuilder extra = new StringBuilder();
+        if (!Double.isNaN(w.feels)) extra.append("Ощущается ").append(Weather.degrees(w.feels));
         if (!Double.isNaN(w.wind)) {
-            d.append(d.length() > 0 ? "   ·   " : "").append("ветер ").append(Math.round(w.wind)).append(" м/с");
+            extra.append(extra.length() > 0 ? " · " : "").append("ветер ").append(Math.round(w.wind)).append(" м/с");
         }
+        if (extra.length() > 0) d.append(d.length() > 0 ? "\n" : "").append(extra);
         weatherDetails.setText(d);
         weatherDetails.setVisibility(d.length() > 0 ? View.VISIBLE : View.GONE);
     }
@@ -733,10 +741,10 @@ public class MainActivity extends Activity {
         String text;
         boolean viaVpn = vpn != null && vpn.isActive();
         if (ms < 0) {
-            color = 0xFFFF6B6B;
+            color = 0xFFFF453A;
             text = getString(R.string.net_down);
         } else {
-            color = ms <= GOOD_MS ? 0xFF4CC26B : ms <= OK_MS ? 0xFFFFC857 : 0xFFFF6B6B;
+            color = ms <= GOOD_MS ? 0xFF30D158 : ms <= OK_MS ? 0xFFFFD60A : 0xFFFF453A;
             text = getString(viaVpn ? R.string.net_ping_vpn : R.string.net_ping, ms);
         }
         netBtn.setImageTintList(android.content.res.ColorStateList.valueOf(color));

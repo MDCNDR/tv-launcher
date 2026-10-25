@@ -15,8 +15,10 @@ final class Tiles {
         tile.setText(label);
         tile.setContentDescription(label);
         tile.setOnFocusChangeListener((v, hasFocus) -> {
-            float s = hasFocus ? 1.08f : 1f;
-            v.animate().scaleX(s).scaleY(s).translationZ(hasFocus ? dp(c, 8) : 0).setDuration(140).start();
+            // Как фокус на Apple TV: плитка приподнимается и чуть увеличивается.
+            float s = hasFocus ? 1.1f : 1f;
+            v.animate().scaleX(s).scaleY(s).translationZ(hasFocus ? dp(c, 12) : 0)
+                    .setInterpolator(new android.view.animation.DecelerateInterpolator()).setDuration(180).start();
         });
         return tile;
     }

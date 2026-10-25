@@ -18,8 +18,8 @@ final class Rates {
             {"EUR", "€"},
             {"CNY", "¥"},
     };
-    private static final int UP = Color.parseColor("#7BD88F");
-    private static final int DOWN = Color.parseColor("#FF7A7A");
+    private static final int UP = Color.parseColor("#30D158");    // зелёный iOS
+    private static final int DOWN = Color.parseColor("#FF453A");  // красный iOS
 
     private Rates() {}
 
@@ -35,7 +35,7 @@ final class Rates {
             double now = v.getDouble("Value") / nominal;
             double prev = v.optDouble("Previous", now) / nominal;
 
-            if (sb.length() > 0) sb.append("     ");
+            if (sb.length() > 0) sb.append('\n');
             sb.append(c[1]).append(' ').append(String.format(ru, "%.2f", now));
             if (Math.abs(now - prev) >= 0.005) {
                 boolean up = now > prev;

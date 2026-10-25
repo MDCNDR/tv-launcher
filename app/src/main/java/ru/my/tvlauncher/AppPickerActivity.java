@@ -26,6 +26,8 @@ public class AppPickerActivity extends Activity {
             TextView tile = Tiles.make(this, grid, e.label);
             GridLayout.LayoutParams lp = (GridLayout.LayoutParams) tile.getLayoutParams();
             lp.width = Tiles.dp(this, 150);
+            lp.setMargins(Tiles.dp(this, 6), Tiles.dp(this, 6), Tiles.dp(this, 6), Tiles.dp(this, 6));
+            tile.setBackgroundResource(R.drawable.chip_bg);
             render(tile, e);
             tile.setOnClickListener(v -> {
                 prefs.toggleFavorite(e.pkg);

@@ -67,4 +67,5 @@
     <string name="priv_adb_off">Включите «Отладку по сети» в настройках «Для разработчиков»</string>
     <string name="priv_not_allowed">Нет доступа: подтвердите запрос «Разрешить отладку?» на экране и попробуйте ещё раз</string>
     <string name="priv_failed">Команда не выполнилась — подробности в журнале (adb logcat -s TvLauncher)</string>
+    <string name="rates_title">Курсы ЦБ</string>
 </resources>
