@@ -74,6 +74,8 @@ public class MainActivity extends Activity {
     };
 
     private ImageView sleepBtn;
+    private ImageView netBtn;
+    private boolean pinging;
     private View content;
 
     /** Приложение, которое ждёт переключения VPN перед запуском. */
@@ -121,6 +123,8 @@ public class MainActivity extends Activity {
         sleepBtn = findViewById(R.id.btn_sleep);
         sleepBtn.setOnClickListener(v -> showSleepDialog());
         findViewById(R.id.btn_clean).setOnClickListener(v -> cleanMemory());
+        netBtn = findViewById(R.id.btn_net);
+        netBtn.setOnClickListener(v -> showSpeedTest());
 
         // Подпись под круглыми кнопками: показывает, что сейчас в фокусе.
         topHint = findViewById(R.id.top_hint);
@@ -154,6 +158,7 @@ public class MainActivity extends Activity {
         }
         renderSleep();
         applyNightMode();
+        checkPing();
         ui.removeCallbacks(refreshTick);
         ui.post(refreshTick);
     }
@@ -383,6 +388,7 @@ public class MainActivity extends Activity {
         if (now - ratesLoadedAt > RATES_TTL) loadRates();
         if (now - wallpaperLoadedAt > WALLPAPER_TTL) loadWallpaper();
         if (now - updateCheckedAt > UPDATE_TTL) checkUpdate();
+        checkPing();
         renderSleep();
         applyNightMode();
     }
@@ -419,6 +425,8 @@ public class MainActivity extends Activity {
         weatherIcon.setVisibility(View.VISIBLE);
         weatherTemp.setText(Weather.degrees(w.temp));
         weatherDesc.setText(w.description + " · " + city);
+        prefs.saveWeather(Weather.degrees(w.temp), w.description + " · " + city,
+                getResources().getResourceEntryName(w.icon));
 
         StringBuilder d = new StringBuilder();
         if (!Double.isNaN(w.feels)) d.append("Ощущается ").append(Weather.degrees(w.feels));
@@ -511,7 +519,7 @@ public class MainActivity extends Activity {
     }
 
     private static final int[] TOP_BUTTONS = {
-            R.id.btn_vpn, R.id.btn_sleep, R.id.btn_clean,
+            R.id.btn_vpn, R.id.btn_net, R.id.btn_sleep, R.id.btn_clean,
             R.id.btn_wifi, R.id.btn_bluetooth, R.id.btn_settings,
     };
 
@@ -688,5 +696,89 @@ public class MainActivity extends Activity {
         if (bytes < 0) return "?";
         long mb = bytes / (1024 * 1024);
         return mb >= 1024 ? String.format(java.util.Locale.ROOT, "%.1f ГБ", mb / 1024.0).replace('.', ',') : mb + " МБ";
+    }
+
+    // ---------- Индикатор интернета ----------
+
+    private static final int GOOD_MS = 80;
+    private static final int OK_MS = 200;
+
+    /** Отдельный поток: пинг не должен ждать погоду и обновления в очереди io. */
+    private void checkPing() {
+        if (pinging) return;
+        pinging = true;
+        new Thread(() -> {
+            int ms = NetCheck.ping();
+            ui.post(() -> {
+                pinging = false;
+                renderNet(ms);
+            });
+        }, "ping").start();
+    }
+
+    private void renderNet(int ms) {
+        int color;
+        String text;
+        boolean viaVpn = vpn != null && vpn.isActive();
+        if (ms < 0) {
+            color = 0xFFFF6B6B;
+            text = getString(R.string.net_down);
+        } else {
+            color = ms <= GOOD_MS ? 0xFF4CC26B : ms <= OK_MS ? 0xFFFFC857 : 0xFFFF6B6B;
+            text = getString(viaVpn ? R.string.net_ping_vpn : R.string.net_ping, ms);
+        }
+        netBtn.setImageTintList(android.content.res.ColorStateList.valueOf(color));
+        netBtn.setContentDescription(text);
+        if (netBtn.isFocused()) topHint.setText(text);
+    }
+
+    private void showSpeedTest() {
+        AlertDialog dialog = new AlertDialog.Builder(this, R.style.Dialog)
+                .setTitle(R.string.speed_title)
+                .setMessage(getString(R.string.speed_running, ""))
+                .setPositiveButton(R.string.speed_again, null)
+                .setNegativeButton(R.string.close, null)
+                .create();
+        dialog.setOnShowListener(d -> {
+            View again = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            again.setOnClickListener(v -> runSpeedTest(dialog));
+            runSpeedTest(dialog);
+        });
+        dialog.show();
+    }
+
+    private boolean speedRunning;
+
+    private void runSpeedTest(AlertDialog dialog) {
+        if (speedRunning) return;
+        speedRunning = true;
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+        dialog.setMessage(getString(R.string.speed_running, ""));
+        boolean viaVpn = vpn.isActive();
+        new Thread(() -> {
+            int ping = NetCheck.ping();
+            double mbps = NetCheck.download(p -> ui.post(() -> {
+                if (dialog.isShowing()) dialog.setMessage(getString(R.string.speed_running, speed(p)));
+            }));
+            ui.post(() -> {
+                speedRunning = false;
+                renderNet(ping);
+                if (!dialog.isShowing()) return;
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                if (mbps < 0) {
+                    dialog.setMessage(getString(R.string.speed_failed));
+                    return;
+                }
+                dialog.setMessage(getString(R.string.speed_result, speed(mbps),
+                        ping < 0 ? "—" : ping + " мс",
+                        viaVpn ? getString(R.string.speed_via_vpn) : ""));
+            });
+        }, "speedtest").start();
+    }
+
+    private static String speed(double mbps) {
+        if (mbps <= 0) return "";
+        return (mbps >= 100 ? String.valueOf(Math.round(mbps))
+                : String.format(java.util.Locale.ROOT, "%.1f", mbps).replace('.', ',')) + " Мбит/с";
     }
 }

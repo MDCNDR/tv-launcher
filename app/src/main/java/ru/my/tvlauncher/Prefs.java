@@ -106,6 +106,20 @@ final class Prefs {
         sp.edit().putLong("sleep_at", t).apply();
     }
 
+    // ---------- Последняя погода (для заставки) ----------
+
+    void saveWeather(String temp, String desc, String iconName) {
+        sp.edit().putString("w_temp", temp).putString("w_desc", desc)
+                .putString("w_icon", iconName).putLong("w_at", System.currentTimeMillis()).apply();
+    }
+
+    /** {температура, описание, имя иконки} или null, если погоде больше 3 часов. */
+    String[] lastWeather() {
+        if (System.currentTimeMillis() - sp.getLong("w_at", 0) > 3 * 60 * 60 * 1000L) return null;
+        String t = sp.getString("w_temp", null);
+        return t == null ? null : new String[]{t, sp.getString("w_desc", ""), sp.getString("w_icon", "")};
+    }
+
     String city() {
         return sp.getString(KEY_CITY, "Москва");
     }

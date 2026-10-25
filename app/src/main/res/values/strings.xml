@@ -51,4 +51,17 @@
     <string name="cleaning">Очищаю память…</string>
     <string name="cleaned">Освобождено %1$s · свободно %2$s</string>
     <string name="cleaned_nothing">Фоновых процессов почти не было · свободно %1$s</string>
+    <string name="dream_name">Мой лаунчер — фото дня</string>
+    <string name="net">Интернет</string>
+    <string name="net_ping">Интернет: %1$d мс</string>
+    <string name="net_ping_vpn">Интернет через VPN: %1$d мс</string>
+    <string name="net_down">Нет интернета</string>
+    <string name="net_checking">Проверяю интернет…</string>
+    <string name="speed_title">Скорость интернета</string>
+    <string name="speed_running">Замеряю скорость… %1$s</string>
+    <string name="speed_result">Скорость загрузки: %1$s\nЗадержка: %2$s%3$s</string>
+    <string name="speed_via_vpn">\nЗамер шёл через VPN</string>
+    <string name="speed_failed">Не удалось замерить скорость: серверы недоступны</string>
+    <string name="speed_again">Ещё раз</string>
+    <string name="close">Закрыть</string>
 </resources>

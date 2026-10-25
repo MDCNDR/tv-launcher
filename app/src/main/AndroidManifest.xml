@@ -63,6 +63,18 @@
             android:name=".SleepReceiver"
             android:exported="false" />
 
+        <!-- Заставка (скринсейвер) -->
+        <service
+            android:name=".ScreensaverDream"
+            android:exported="true"
+            android:label="@string/dream_name"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".AppPickerActivity"
             android:exported="false"

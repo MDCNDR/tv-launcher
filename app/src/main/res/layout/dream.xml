@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF000000">
+
+    <ImageView
+        android:id="@+id/img_a"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <ImageView
+        android:id="@+id/img_b"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/scrim_bottom" />
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="56dp">
+
+        <LinearLayout
+            android:id="@+id/dream_clock_box"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:orientation="vertical">
+
+            <TextClock
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-thin"
+                android:format12Hour="HH:mm"
+                android:format24Hour="HH:mm"
+                android:includeFontPadding="false"
+                android:shadowColor="#99000000"
+                android:shadowRadius="14"
+                android:textColor="#F2FFFFFF"
+                android:textSize="96sp" />
+
+            <TextClock
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:fontFamily="sans-serif-light"
+                android:format12Hour="EEEE, d MMMM"
+                android:format24Hour="EEEE, d MMMM"
+                android:shadowColor="#99000000"
+                android:shadowRadius="10"
+                android:textColor="#D9FFFFFF"
+                android:textSize="22sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/dream_weather"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/dream_weather_icon"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/dream_weather_temp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-thin"
+                    android:includeFontPadding="false"
+                    android:shadowColor="#99000000"
+                    android:shadowRadius="10"
+                    android:textColor="#F2FFFFFF"
+                    android:textSize="44sp" />
+
+                <TextView
+                    android:id="@+id/dream_weather_desc"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:shadowColor="#99000000"
+                    android:shadowRadius="8"
+                    android:textColor="#D9FFFFFF"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+</FrameLayout>

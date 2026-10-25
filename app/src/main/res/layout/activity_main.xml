@@ -80,6 +80,13 @@
                     android:visibility="gone" />
 
                 <ImageView
+                    android:id="@+id/btn_net"
+                    style="@style/Circle"
+                    android:contentDescription="@string/net_checking"
+                    android:src="@drawable/ic_net"
+                    android:tint="@color/chip_text" />
+
+                <ImageView
                     android:id="@+id/btn_sleep"
                     style="@style/Circle"
                     android:contentDescription="@string/sleep"
