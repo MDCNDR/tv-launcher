@@ -30,7 +30,7 @@ public class SleepReceiver extends BroadcastReceiver {
         new Thread(() -> {
             try {
                 // KEYCODE_SLEEP: приставка засыпает, по HDMI-CEC обычно выключается и телевизор.
-                Root.run("input keyevent 223", 15_000);
+                Privileged.run(context, "input keyevent 223");
             } finally {
                 result.finish();
             }

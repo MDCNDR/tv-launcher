@@ -3,7 +3,7 @@ package ru.my.tvlauncher;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
-/** Очистка памяти: закрывает фоновые процессы (am kill-all через root). Не из UI-потока. */
+/** Очистка памяти: закрывает фоновые процессы (am kill-all с правами shell/root). Не из UI-потока. */
 final class Cleaner {
 
     private Cleaner() {}
@@ -27,11 +27,12 @@ final class Cleaner {
     /**
      * Закрывает всё, что висит в фоне. Приложения на переднем плане и активные
      * сервисы (например, VPN Happ) не трогаются — их am kill-all не закрывает.
-     * Возвращает {доступно до, доступно после} или null, если нет root.
+     * Возвращает {доступно до, доступно после}; при ошибке — {-1, причина (ordinal)}.
      */
-    static long[] clean() throws InterruptedException {
+    static long[] clean(android.content.Context c) throws InterruptedException {
         long before = available();
-        if (!Root.run("am kill-all", 30_000)) return null;
+        Privileged.Result r = Privileged.run(c, "am kill-all");
+        if (r != Privileged.Result.OK) return new long[]{-1, r.ordinal()};
         Thread.sleep(1500); // системе нужно время, чтобы забрать память
         return new long[]{before, available()};
     }

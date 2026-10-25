@@ -48,3 +48,10 @@ android {
         checkReleaseBuilds false
     }
 }
+
+dependencies {
+    // ADB-клиент для подключения к отладке по сети на самой приставке (без root).
+    implementation 'dev.mobile:dadb:1.2.9'
+    // Одна версия всех модулей Kotlin, которые тянет dadb.
+    implementation platform('org.jetbrains.kotlin:kotlin-bom:1.9.24')
+}

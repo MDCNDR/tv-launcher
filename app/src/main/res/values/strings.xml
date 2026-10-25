@@ -46,7 +46,6 @@
     <string name="sleep_set">Приставка уснёт через %1$d мин</string>
     <string name="sleep_cancelled">Таймер сна отключён</string>
     <string name="sleep_warn">Через минуту приставка уснёт. Отменить — кнопка с луной на главном экране</string>
-    <string name="need_root">Нужен root: разрешите лаунчеру доступ в запросе Magisk</string>
     <string name="clean">Очистить память</string>
     <string name="cleaning">Очищаю память…</string>
     <string name="cleaned">Освобождено %1$s · свободно %2$s</string>
@@ -64,4 +63,8 @@
     <string name="speed_failed">Не удалось замерить скорость: серверы недоступны</string>
     <string name="speed_again">Ещё раз</string>
     <string name="close">Закрыть</string>
+    <string name="priv_checking">Если на экране появится «Разрешить отладку?» — отметьте «Всегда» и нажмите ОК</string>
+    <string name="priv_adb_off">Включите «Отладку по сети» в настройках «Для разработчиков»</string>
+    <string name="priv_not_allowed">Нет доступа: подтвердите запрос «Разрешить отладку?» на экране и попробуйте ещё раз</string>
+    <string name="priv_failed">Команда не выполнилась — подробности в журнале (adb logcat -s TvLauncher)</string>
 </resources>

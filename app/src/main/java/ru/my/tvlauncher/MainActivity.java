@@ -626,18 +626,19 @@ public class MainActivity extends Activity {
                     }
                     int minutes = SLEEP_MINUTES[which - (active ? 1 : 0)];
                     // Сразу проверяем root, чтобы запрос Magisk появился сейчас, а не ночью.
-                    io.execute(() -> {
-                        boolean root = Root.available();
+                    Toast.makeText(this, R.string.priv_checking, Toast.LENGTH_LONG).show();
+                    new Thread(() -> {
+                        Privileged.Result access = Privileged.run(this, "true");
                         ui.post(() -> {
-                            if (!root) {
-                                Toast.makeText(this, R.string.need_root, Toast.LENGTH_LONG).show();
+                            if (access != Privileged.Result.OK) {
+                                Toast.makeText(this, Privileged.message(access), Toast.LENGTH_LONG).show();
                                 return;
                             }
                             SleepReceiver.schedule(this, minutes);
                             Toast.makeText(this, getString(R.string.sleep_set, minutes), Toast.LENGTH_SHORT).show();
                             renderSleep();
                         });
-                    });
+                    }, "sleep-check").start();
                 })
                 .show();
     }
@@ -679,18 +680,19 @@ public class MainActivity extends Activity {
         if (cleaning) return;
         cleaning = true;
         Toast.makeText(this, R.string.cleaning, Toast.LENGTH_SHORT).show();
-        io.execute(() -> {
+        new Thread(() -> {
             long[] r;
             try {
-                r = Cleaner.clean();
+                r = Cleaner.clean(this);
             } catch (InterruptedException e) {
-                r = null;
+                r = new long[]{-1, Privileged.Result.FAILED.ordinal()};
             }
             final long[] res = r;
             ui.post(() -> {
                 cleaning = false;
-                if (res == null) {
-                    Toast.makeText(this, R.string.need_root, Toast.LENGTH_LONG).show();
+                if (res[0] < 0) {
+                    Privileged.Result why = Privileged.Result.values()[(int) res[1]];
+                    Toast.makeText(this, Privileged.message(why), Toast.LENGTH_LONG).show();
                     return;
                 }
                 long freed = res[1] - res[0];
@@ -699,7 +701,7 @@ public class MainActivity extends Activity {
                         : getString(R.string.cleaned_nothing, mb(res[1]));
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
             });
-        });
+        }, "clean").start();
     }
 
     private static String mb(long bytes) {
