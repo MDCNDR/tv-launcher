@@ -28,8 +28,6 @@ public class MainActivity extends Activity {
     /** Как часто проверять, не пора ли обновить данные (и повторить после ошибки). */
     private static final long TICK_MS = 5 * MINUTE;
     private static final long WEATHER_TTL = 30 * MINUTE;
-    private static final long RATES_TTL = 3 * 60 * MINUTE;
-    private static final long WALLPAPER_TTL = 60 * MINUTE;
     /** Чуть меньше тика, чтобы проверка шла на каждом тике (раз в 5 минут). */
     private static final long UPDATE_TTL = 4 * MINUTE;
     private static final long VPN_WAIT_MS = 12_000;
@@ -54,15 +52,11 @@ public class MainActivity extends Activity {
     private TextView weatherDesc;
     private TextView weatherDetails;
     private TextView weatherCityView;
-    private TextView rates;
     private ImageView wallpaper;
-    private TextView wallpaperCaption;
     /** Пакет плитки, на которую вернуть фокус после перестройки строки. */
     private String focusPkg;
     private boolean resumed;
     private long weatherLoadedAt;
-    private long ratesLoadedAt;
-    private long wallpaperLoadedAt;
     private long updateCheckedAt;
     private String weatherCity;
 
@@ -104,9 +98,9 @@ public class MainActivity extends Activity {
         weatherDetails = findViewById(R.id.weather_details);
         weatherCityView = findViewById(R.id.weather_city);
         weatherCityView.setText(prefs.city());
-        rates = findViewById(R.id.rates);
         wallpaper = findViewById(R.id.wallpaper);
-        wallpaperCaption = findViewById(R.id.wallpaper_caption);
+        wallpaper.setImageBitmap(Wallpaper.get(getResources()));
+        io.execute(() -> Wallpaper.cleanupOldFiles(getApplicationContext()));
 
         findViewById(R.id.btn_wifi).setOnClickListener(v -> openSettings(Settings.ACTION_WIFI_SETTINGS));
         findViewById(R.id.btn_bluetooth).setOnClickListener(v -> openSettings(Settings.ACTION_BLUETOOTH_SETTINGS));
@@ -386,14 +380,12 @@ public class MainActivity extends Activity {
         }
     }
 
-    // ---------- Погода, курсы, фон ----------
+    // ---------- Погода ----------
 
     /** Обновляет то, что устарело. Неудачные загрузки повторятся на следующем тике. */
     private void refreshStale() {
         long now = System.currentTimeMillis();
         if (now - weatherLoadedAt > WEATHER_TTL) loadWeather();
-        if (now - ratesLoadedAt > RATES_TTL) loadRates();
-        if (now - wallpaperLoadedAt > WALLPAPER_TTL) loadWallpaper();
         if (now - updateCheckedAt > UPDATE_TTL) checkUpdate();
         checkPing();
         renderSleep();
@@ -418,7 +410,7 @@ public class MainActivity extends Activity {
                     weatherCity = city;
                     weatherLoadedAt = System.currentTimeMillis();
                 } else if (weatherLoadedAt == 0) {
-                    weatherIcon.setVisibility(View.INVISIBLE);
+                    weatherIcon.setVisibility(View.GONE);
                     weatherTemp.setText("—");
                     weatherDesc.setText(R.string.weather_error);
                     weatherDetails.setText("");
@@ -437,60 +429,22 @@ public class MainActivity extends Activity {
         prefs.saveWeather(Weather.degrees(w.temp), w.description + " · " + city,
                 getResources().getResourceEntryName(w.icon));
 
-        // Как в виджете погоды iOS: «Макс.: +14°, мин.: +6°», ниже — ощущается и ветер.
+        // Одной строкой: «↑+14°  ↓+6° · ощущается +10° · ветер 3 м/с».
         StringBuilder d = new StringBuilder();
         if (!Double.isNaN(w.max) && !Double.isNaN(w.min)) {
-            d.append("Макс.: ").append(Weather.degrees(w.max))
-                    .append(", мин.: ").append(Weather.degrees(w.min));
+            d.append("↑").append(Weather.degrees(w.max))
+                    .append("  ↓").append(Weather.degrees(w.min));
         }
         StringBuilder extra = new StringBuilder();
-        if (!Double.isNaN(w.feels)) extra.append("Ощущается ").append(Weather.degrees(w.feels));
+        if (!Double.isNaN(w.feels)) extra.append("ощущается ").append(Weather.degrees(w.feels));
         if (!Double.isNaN(w.wind)) {
             extra.append(extra.length() > 0 ? " · " : "").append("ветер ").append(Math.round(w.wind)).append(" м/с");
         }
-        if (extra.length() > 0) d.append(d.length() > 0 ? "\n" : "").append(extra);
+        if (extra.length() > 0) d.append(d.length() > 0 ? " · " : "").append(extra);
         weatherDetails.setText(d);
         weatherDetails.setVisibility(d.length() > 0 ? View.VISIBLE : View.GONE);
     }
 
-    private void loadRates() {
-        io.execute(() -> {
-            CharSequence text;
-            try {
-                text = Rates.load();
-            } catch (Exception ex) {
-                Net.warn("rates failed", ex);
-                text = null;
-            }
-            final CharSequence shown = text;
-            ui.post(() -> {
-                if (shown == null) return;
-                rates.setText(shown);
-                ratesLoadedAt = System.currentTimeMillis();
-            });
-        });
-    }
-
-    private void loadWallpaper() {
-        io.execute(() -> {
-            Wallpaper.Result result;
-            try {
-                result = Wallpaper.load(getApplicationContext());
-            } catch (Exception ex) {
-                Net.warn("wallpaper failed", ex);
-                result = null;
-            }
-            final Wallpaper.Result r = result;
-            ui.post(() -> {
-                if (r == null) return;
-                boolean first = wallpaper.getDrawable() == null;
-                wallpaper.setImageBitmap(r.bitmap);
-                wallpaperCaption.setText(r.caption);
-                if (first) wallpaper.animate().alpha(isNight() ? 0.3f : 1f).setDuration(600).start();
-                wallpaperLoadedAt = System.currentTimeMillis();
-            });
-        });
-    }
 
 
     // ---------- VPN (Happ) ----------
@@ -677,7 +631,7 @@ public class MainActivity extends Activity {
     private void applyNightMode() {
         boolean night = isNight();
         content.setAlpha(night ? 0.6f : 1f);
-        if (wallpaper.getDrawable() != null) wallpaper.setAlpha(night ? 0.3f : 1f);
+        wallpaper.setAlpha(night ? 0.35f : 1f);
     }
 
     // ---------- Очистка памяти ----------

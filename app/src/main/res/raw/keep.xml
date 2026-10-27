@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Иконки погоды берутся по имени в заставке — не удалять при сжатии ресурсов. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/wx_*" />

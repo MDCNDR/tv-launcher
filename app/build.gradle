@@ -33,7 +33,10 @@ android {
             signingConfig signingConfigs.launcher
         }
         release {
-            minifyEnabled false
+            // Сжатие: выкидываем неиспользуемый код и ресурсы — меньше APK и памяти.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.launcher
         }
     }

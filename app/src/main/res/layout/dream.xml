@@ -5,118 +5,71 @@
     android:background="#FF000000">
 
     <ImageView
-        android:id="@+id/img_a"
+        android:id="@+id/dream_bg"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:alpha="0"
         android:importantForAccessibility="no"
         android:scaleType="centerCrop" />
 
-    <ImageView
-        android:id="@+id/img_b"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:alpha="0"
-        android:importantForAccessibility="no"
-        android:scaleType="centerCrop" />
+    <!-- Часы и погода по центру; весь блок понемногу смещается против выгорания -->
+    <LinearLayout
+        android:id="@+id/dream_center"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="60dp"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="320dp"
-        android:layout_gravity="bottom"
-        android:background="@drawable/scrim_bottom" />
-
-    <FrameLayout
-        android:id="@+id/content"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="56dp">
-
-        <TextView
-            android:id="@+id/dream_caption"
+        <TextClock
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:alpha="0"
-            android:shadowColor="#99000000"
-            android:shadowRadius="8"
-            android:textColor="#CCFFFFFF"
-            android:textSize="15sp" />
+            android:fontFamily="sans-serif-medium"
+            android:format12Hour="EEEE, d MMMM"
+            android:format24Hour="EEEE, d MMMM"
+            android:shadowColor="#66000000"
+            android:shadowRadius="10"
+            android:textColor="#E6FFFFFF"
+            android:textSize="24sp" />
 
-        <LinearLayout
-            android:id="@+id/dream_clock_box"
+        <TextClock
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|start"
-            android:orientation="vertical">
-
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:fontFamily="sans-serif-medium"
-                android:format12Hour="EEEE, d MMMM"
-                android:format24Hour="EEEE, d MMMM"
-                android:shadowColor="#99000000"
-                android:shadowRadius="10"
-                android:textColor="#E6FFFFFF"
-                android:textSize="22sp" />
-
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:format12Hour="H:mm"
-                android:format24Hour="H:mm"
-                android:includeFontPadding="false"
-                android:letterSpacing="-0.03"
-                android:shadowColor="#99000000"
-                android:shadowRadius="16"
-                android:textColor="#FFFFFFFF"
-                android:textSize="110sp" />
-        </LinearLayout>
+            android:fontFamily="sans-serif-medium"
+            android:format12Hour="H:mm"
+            android:format24Hour="H:mm"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.03"
+            android:shadowColor="#66000000"
+            android:shadowRadius="18"
+            android:textColor="#FFFFFFFF"
+            android:textSize="140sp" />
 
         <LinearLayout
             android:id="@+id/dream_weather"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
+            android:layout_marginTop="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:visibility="gone">
 
             <ImageView
                 android:id="@+id/dream_weather_icon"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:importantForAccessibility="no" />
 
-            <LinearLayout
+            <TextView
+                android:id="@+id/dream_weather_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/dream_weather_temp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-light"
-                    android:includeFontPadding="false"
-                    android:shadowColor="#99000000"
-                    android:shadowRadius="10"
-                    android:textColor="#F2FFFFFF"
-                    android:textSize="44sp" />
-
-                <TextView
-                    android:id="@+id/dream_weather_desc"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:shadowColor="#99000000"
-                    android:shadowRadius="8"
-                    android:textColor="#D9FFFFFF"
-                    android:textSize="16sp" />
-            </LinearLayout>
+                android:layout_marginStart="10dp"
+                android:fontFamily="sans-serif-medium"
+                android:shadowColor="#66000000"
+                android:shadowRadius="8"
+                android:textColor="#E6FFFFFF"
+                android:textSize="20sp" />
         </LinearLayout>
-    </FrameLayout>
+    </LinearLayout>
 </FrameLayout>

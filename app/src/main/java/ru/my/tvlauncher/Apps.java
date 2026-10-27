@@ -79,15 +79,9 @@ final class Apps {
         return i;
     }
 
+    /** Только название: картинки приложений лаунчер не показывает и в память не грузит. */
     private static Entry toEntry(PackageManager pm, ResolveInfo ri) {
         ActivityInfo ai = ri.activityInfo;
-        CharSequence label = ri.loadLabel(pm);
-        Drawable banner = null;
-        try {
-            banner = ai.loadBanner(pm);
-        } catch (Exception ignored) {
-        }
-        if (banner != null) return new Entry(ai.packageName, label, banner, true);
-        return new Entry(ai.packageName, label, ri.loadIcon(pm), false);
+        return new Entry(ai.packageName, ri.loadLabel(pm), null, false);
     }
 }

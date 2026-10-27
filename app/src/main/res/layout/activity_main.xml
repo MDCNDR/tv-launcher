@@ -13,12 +13,7 @@
         android:importantForAccessibility="no"
         android:scaleType="centerCrop" />
 
-    <!-- Лёгкое затемнение: читаемость обеспечивают «стеклянные» карточки -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/scrim_left" />
-
+    <!-- Лёгкое затемнение снизу под доком -->
     <View
         android:layout_width="match_parent"
         android:layout_height="220dp"
@@ -35,21 +30,6 @@
         android:paddingEnd="56dp"
         android:paddingTop="32dp"
         android:paddingBottom="32dp">
-
-        <!-- Подпись к снимку -->
-        <TextView
-            android:id="@+id/wallpaper_caption"
-            android:layout_width="wrap_content"
-            android:layout_height="46dp"
-            android:layout_gravity="top|start"
-            android:ellipsize="end"
-            android:gravity="center_vertical"
-            android:maxLines="1"
-            android:maxWidth="360dp"
-            android:shadowColor="#99000000"
-            android:shadowRadius="6"
-            android:textColor="#CCFFFFFF"
-            android:textSize="13sp" />
 
         <!-- Верхняя строка: обновление и круглые кнопки, под ними подпись кнопки в фокусе -->
         <LinearLayout
@@ -137,19 +117,20 @@
                 android:visibility="invisible" />
         </LinearLayout>
 
-        <!-- Слева: дата над крупным временем, как на экране блокировки iOS -->
+        <!-- По центру: дата, крупное время и погода под ними -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="start|center_vertical"
-            android:layout_marginBottom="56dp"
+            android:layout_gravity="center"
+            android:layout_marginBottom="40dp"
+            android:clipChildren="false"
+            android:gravity="center_horizontal"
             android:orientation="vertical">
 
             <TextClock
                 android:id="@+id/date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
                 android:fontFamily="sans-serif-medium"
                 android:format12Hour="EEEE, d MMMM"
                 android:format24Hour="EEEE, d MMMM"
@@ -170,118 +151,82 @@
                 android:shadowColor="#66000000"
                 android:shadowRadius="18"
                 android:textColor="#FFFFFFFF"
-                android:textSize="132sp" />
-        </LinearLayout>
-
-        <!-- Справа: виджеты погоды и курсов -->
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|center_vertical"
-            android:layout_marginBottom="56dp"
-            android:clipChildren="false"
-            android:orientation="horizontal">
+                android:textSize="140sp" />
 
             <!-- Погода: ОК — прогноз, долгое ОК — город -->
             <LinearLayout
                 android:id="@+id/weather_block"
-                android:layout_width="250dp"
-                android:layout_height="180dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
                 android:background="@drawable/glass_card"
                 android:clickable="true"
                 android:focusable="true"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="20dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="26dp"
+                android:paddingBottom="12dp">
+
+                <ImageView
+                    android:id="@+id/weather_icon"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:importantForAccessibility="no"
+                    android:visibility="gone" />
 
                 <TextView
-                    android:id="@+id/weather_city"
-                    android:layout_width="match_parent"
+                    android:id="@+id/weather_temp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif-medium"
-                    android:maxLines="1"
+                    android:layout_marginStart="12dp"
+                    android:fontFamily="sans-serif-light"
+                    android:includeFontPadding="false"
+                    android:text="—"
                     android:textColor="#FFFFFFFF"
-                    android:textSize="17sp" />
+                    android:textSize="36sp" />
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:layout_marginStart="16dp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/weather_desc"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:maxLines="1"
+                            android:text="@string/weather_loading"
+                            android:textColor="#FFFFFFFF"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/weather_city"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:maxLines="1"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="16sp" />
+                    </LinearLayout>
 
                     <TextView
-                        android:id="@+id/weather_temp"
-                        android:layout_width="0dp"
+                        android:id="@+id/weather_details"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="sans-serif-light"
-                        android:includeFontPadding="false"
-                        android:text="—"
-                        android:textColor="#FFFFFFFF"
-                        android:textSize="52sp" />
-
-                    <ImageView
-                        android:id="@+id/weather_icon"
-                        android:layout_width="52dp"
-                        android:layout_height="52dp"
-                        android:importantForAccessibility="no"
-                        android:visibility="invisible" />
+                        android:layout_marginTop="2dp"
+                        android:maxLines="1"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="13sp" />
                 </LinearLayout>
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:id="@+id/weather_desc"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:fontFamily="sans-serif-medium"
-                    android:maxLines="1"
-                    android:text="@string/weather_loading"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/weather_details"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
-                    android:textColor="#B3FFFFFF"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <!-- Курсы ЦБ -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="180dp"
-                android:layout_marginStart="16dp"
-                android:background="@drawable/glass_card"
-                android:minWidth="180dp"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="@string/rates_title"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="17sp" />
-
-                <TextView
-                    android:id="@+id/rates"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:lineSpacingExtra="7dp"
-                    android:textColor="#FFFFFFFF"
-                    android:textSize="18sp" />
             </LinearLayout>
         </LinearLayout>
 
