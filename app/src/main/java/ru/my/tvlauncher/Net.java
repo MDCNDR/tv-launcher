@@ -20,12 +20,21 @@ final class Net {
         return new String(getBytes(address), StandardCharsets.UTF_8);
     }
 
+    static String getText(String address, int connectMs, int readMs) throws IOException {
+        return new String(getBytes(address, connectMs, readMs), StandardCharsets.UTF_8);
+    }
+
     static byte[] getBytes(String address) throws IOException {
+        return getBytes(address, 15_000, 20_000);
+    }
+
+    static byte[] getBytes(String address, int connectMs, int readMs) throws IOException {
         HttpURLConnection conn = (HttpURLConnection) new URL(address).openConnection();
-        conn.setConnectTimeout(15_000);
-        conn.setReadTimeout(20_000);
+        conn.setConnectTimeout(connectMs);
+        conn.setReadTimeout(readMs);
         conn.setInstanceFollowRedirects(true);
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android TV) TvLauncher/1.1");
+        // OpenStreetMap просит понятный User-Agent с адресом проекта.
+        conn.setRequestProperty("User-Agent", "TvLauncher/1.3 github.com/MDCNDR/tv-launcher");
         conn.setRequestProperty("Accept", "*/*");
         try {
             int code = conn.getResponseCode();

@@ -67,20 +67,14 @@ final class Weather {
         }
     }
 
-    /** Прогноз на 7 дней (Open-Meteo) или на 3 дня (wttr.in), если первый недоступен. */
+    /** Прогноз: Open-Meteo (7 дней), если недоступен — wttr.in (3 дня). */
     static java.util.List<Day> forecast(double lat, double lon) throws Exception {
         try {
             return forecastOpenMeteo(lat, lon);
         } catch (Exception first) {
             Net.warn("open-meteo forecast failed", first);
-            try {
-                return forecastWttr(lat, lon);
-            } catch (Exception second) {
-                Net.warn("wttr.in forecast failed", second);
-                second.addSuppressed(first);
-                throw second;
-            }
         }
+        return forecastWttr(lat, lon);
     }
 
     private static java.util.List<Day> forecastOpenMeteo(double lat, double lon) throws Exception {
@@ -90,7 +84,7 @@ final class Weather {
                         + "precipitation_probability_max,wind_speed_10m_max"
                         + "&forecast_days=7&wind_speed_unit=ms&timezone=auto",
                 lat, lon);
-        JSONObject daily = new JSONObject(Net.getText(url)).getJSONObject("daily");
+        JSONObject daily = new JSONObject(Net.getText(url, 6_000, 15_000)).getJSONObject("daily");
         JSONArray time = daily.getJSONArray("time");
         JSONArray codes = daily.getJSONArray("weather_code");
         JSONArray max = daily.optJSONArray("temperature_2m_max");
@@ -111,7 +105,7 @@ final class Weather {
 
     private static java.util.List<Day> forecastWttr(double lat, double lon) throws Exception {
         String url = String.format(Locale.US, "https://wttr.in/%.4f,%.4f?format=j1&lang=ru", lat, lon);
-        JSONArray days = new JSONObject(Net.getText(url)).getJSONArray("weather");
+        JSONArray days = new JSONObject(Net.getText(url, 10_000, 40_000)).getJSONArray("weather");
         java.util.List<Day> out = new java.util.ArrayList<>();
         for (int i = 0; i < days.length(); i++) {
             JSONObject d = days.getJSONObject(i);
@@ -151,30 +145,47 @@ final class Weather {
 
     /** Ищет город по названию. Возвращает null, если не найден. */
     static Place geocode(String query) throws Exception {
+        try {
+            return geocodeOpenMeteo(query);
+        } catch (Exception e) {
+            Net.warn("open-meteo geocoding failed", e);
+        }
+        // Запасной поиск — OpenStreetMap (Nominatim).
+        String url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q="
+                + URLEncoder.encode(query.trim(), "UTF-8");
+        JSONArray arr = new JSONArray(Net.getText(url, 8_000, 20_000));
+        if (arr.length() == 0) return null;
+        JSONObject r = arr.getJSONObject(0);
+        String name = r.optString("name", "");
+        if (name.isEmpty()) name = r.optString("display_name", query).split(",")[0].trim();
+        return new Place(name, r.getDouble("lat"), r.getDouble("lon"));
+    }
+
+    private static Place geocodeOpenMeteo(String query) throws Exception {
         String url = "https://geocoding-api.open-meteo.com/v1/search?count=1&language=ru&name="
                 + URLEncoder.encode(query.trim(), "UTF-8");
-        JSONObject json = new JSONObject(Net.getText(url));
+        JSONObject json = new JSONObject(Net.getText(url, 6_000, 15_000));
         JSONArray results = json.optJSONArray("results");
         if (results == null || results.length() == 0) return null;
         JSONObject r = results.getJSONObject(0);
         return new Place(r.getString("name"), r.getDouble("latitude"), r.getDouble("longitude"));
     }
 
-    /** Бросает исключение, только если оба источника недоступны. */
+    /** Open-Meteo, если недоступен (у части провайдеров заблокирован) — wttr.in. */
     static Now current(double lat, double lon) throws Exception {
         try {
             return fromOpenMeteo(lat, lon);
         } catch (Exception first) {
             Net.warn("open-meteo failed", first);
-            try {
-                return fromWttr(lat, lon);
-            } catch (Exception second) {
-                Net.warn("wttr.in failed", second);
-                second.addSuppressed(first);
-                throw second;
-            }
+        }
+        try {
+            return fromWttr(lat, lon);
+        } catch (Exception third) {
+            Net.warn("wttr.in failed", third);
+            throw third;
         }
     }
+
 
     private static Now fromOpenMeteo(double lat, double lon) throws Exception {
         String url = String.format(Locale.US,
@@ -183,7 +194,7 @@ final class Weather {
                         + "&daily=temperature_2m_max,temperature_2m_min&forecast_days=1"
                         + "&wind_speed_unit=ms&timezone=auto",
                 lat, lon);
-        JSONObject json = new JSONObject(Net.getText(url));
+        JSONObject json = new JSONObject(Net.getText(url, 6_000, 15_000));
         JSONObject cur = json.getJSONObject("current");
         JSONObject daily = json.optJSONObject("daily");
         int code = cur.getInt("weather_code");
@@ -200,7 +211,7 @@ final class Weather {
 
     private static Now fromWttr(double lat, double lon) throws Exception {
         String url = String.format(Locale.US, "https://wttr.in/%.4f,%.4f?format=j1&lang=ru", lat, lon);
-        JSONObject json = new JSONObject(Net.getText(url));
+        JSONObject json = new JSONObject(Net.getText(url, 10_000, 40_000));
         JSONObject cur = json.getJSONArray("current_condition").getJSONObject(0);
         String desc = null;
         JSONArray ru = cur.optJSONArray("lang_ru");

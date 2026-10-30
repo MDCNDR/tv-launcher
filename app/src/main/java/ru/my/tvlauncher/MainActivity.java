@@ -98,6 +98,7 @@ public class MainActivity extends Activity {
         weatherDetails = findViewById(R.id.weather_details);
         weatherCityView = findViewById(R.id.weather_city);
         weatherCityView.setText(prefs.city());
+        showCachedWeather();
         wallpaper = findViewById(R.id.wallpaper);
         wallpaper.setImageBitmap(Wallpaper.get(getResources()));
         io.execute(() -> Wallpaper.cleanupOldFiles(getApplicationContext()));
@@ -410,7 +411,8 @@ public class MainActivity extends Activity {
                     showWeather(w, city);
                     weatherCity = city;
                     weatherLoadedAt = System.currentTimeMillis();
-                } else if (weatherLoadedAt == 0) {
+                } else if (weatherLoadedAt == 0 && prefs.lastWeather() == null) {
+                    // Ошибку показываем, только если нечего показать из последней удачной загрузки.
                     weatherIcon.setVisibility(View.GONE);
                     weatherTemp.setText("—");
                     weatherDesc.setText(R.string.weather_error);
@@ -803,6 +805,21 @@ public class MainActivity extends Activity {
                     || state == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /** Сразу показываем последнюю удачную погоду (до 3 часов), пока грузится свежая. */
+    private void showCachedWeather() {
+        String[] w = prefs.lastWeather();
+        if (w == null) return;
+        weatherTemp.setText(w[0]);
+        String desc = w[1];
+        int dot = desc.lastIndexOf(" · ");
+        weatherDesc.setText(dot > 0 ? desc.substring(0, dot) : desc);
+        int icon = getResources().getIdentifier(w[2], "drawable", getPackageName());
+        if (icon != 0) {
+            weatherIcon.setImageResource(icon);
+            weatherIcon.setVisibility(View.VISIBLE);
         }
     }
 }
