@@ -67,4 +67,7 @@
     <string name="priv_adb_off">Включите «Отладку по сети» в настройках «Для разработчиков»</string>
     <string name="priv_not_allowed">Нет доступа: подтвердите запрос «Разрешить отладку?» на экране и попробуйте ещё раз</string>
     <string name="priv_failed">Команда не выполнилась — подробности в журнале (adb logcat -s TvLauncher)</string>
+    <string name="store">Google Play</string>
+    <string name="store_enabling">Маркет был отключён — включаю…</string>
+    <string name="store_missing">Не удалось открыть Google Play</string>
 </resources>

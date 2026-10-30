@@ -122,6 +122,7 @@ public class MainActivity extends Activity {
         sleepBtn = findViewById(R.id.btn_sleep);
         sleepBtn.setOnClickListener(v -> showSleepDialog());
         findViewById(R.id.btn_clean).setOnClickListener(v -> cleanMemory());
+        findViewById(R.id.btn_store).setOnClickListener(v -> openStore());
         netBtn = findViewById(R.id.btn_net);
         netBtn.setOnClickListener(v -> showSpeedTest());
 
@@ -485,7 +486,7 @@ public class MainActivity extends Activity {
     }
 
     private static final int[] TOP_BUTTONS = {
-            R.id.btn_vpn, R.id.btn_net, R.id.btn_sleep, R.id.btn_clean,
+            R.id.btn_vpn, R.id.btn_net, R.id.btn_sleep, R.id.btn_clean, R.id.btn_store,
             R.id.btn_wifi, R.id.btn_bluetooth, R.id.btn_settings,
     };
 
@@ -754,5 +755,54 @@ public class MainActivity extends Activity {
         if (mbps <= 0) return "";
         return (mbps >= 100 ? String.valueOf(Math.round(mbps))
                 : String.format(java.util.Locale.ROOT, "%.1f", mbps).replace('.', ',')) + " Мбит/с";
+    }
+
+    // ---------- Google Play ----------
+
+    private static final String PLAY = "com.android.vending";
+
+    /** Открывает Play Маркет. На Google TV у него нет своего значка, поэтому пробуем по очереди. */
+    private void openStore() {
+        if (isPackageDisabled(PLAY)) {
+            // Маркет отключён — включаем его через отладку по сети и открываем.
+            Toast.makeText(this, R.string.store_enabling, Toast.LENGTH_SHORT).show();
+            new Thread(() -> {
+                Privileged.Result r = Privileged.run(this, "pm enable " + PLAY);
+                ui.post(() -> {
+                    if (r == Privileged.Result.OK) startStore();
+                    else Toast.makeText(this, Privileged.message(r), Toast.LENGTH_LONG).show();
+                });
+            }, "enable-play").start();
+            return;
+        }
+        startStore();
+    }
+
+    private void startStore() {
+        android.content.pm.PackageManager pm = getPackageManager();
+        Intent[] tries = {
+                Apps.launchIntent(pm, PLAY),
+                new Intent(Intent.ACTION_VIEW, Uri.parse("market://search?q=")).setPackage(PLAY),
+                new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + PLAY)),
+        };
+        for (Intent i : tries) {
+            if (i == null) continue;
+            try {
+                startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                return;
+            } catch (ActivityNotFoundException | SecurityException ignored) {
+            }
+        }
+        Toast.makeText(this, R.string.store_missing, Toast.LENGTH_LONG).show();
+    }
+
+    private boolean isPackageDisabled(String pkg) {
+        try {
+            int state = getPackageManager().getApplicationEnabledSetting(pkg);
+            return state == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                    || state == android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

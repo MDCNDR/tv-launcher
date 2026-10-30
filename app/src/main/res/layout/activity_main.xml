@@ -83,6 +83,13 @@
                     android:tint="@color/chip_text" />
 
                 <ImageView
+                    android:id="@+id/btn_store"
+                    style="@style/Circle"
+                    android:contentDescription="@string/store"
+                    android:src="@drawable/ic_store"
+                    android:tint="@color/chip_text" />
+
+                <ImageView
                     android:id="@+id/btn_wifi"
                     style="@style/Circle"
                     android:contentDescription="@string/wifi"
