@@ -8,7 +8,7 @@ import android.graphics.BitmapFactory;
 import java.io.File;
 
 /**
- * Статичный фон в стиле macOS (свой рисунок, встроен в лаунчер — без интернета).
+ * Статичный фон: натюрморт «банан и два яйца» (свой рисунок, встроен в лаунчер — без интернета).
  * Декодируем в половинном разрешении и в 16-битном цвете: на плавных градиентах
  * разницы не видно, а в памяти ~1 МБ вместо ~8 МБ.
  */
@@ -23,7 +23,7 @@ final class Wallpaper {
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inSampleSize = 2;
         o.inPreferredConfig = Bitmap.Config.RGB_565;
-        cached = BitmapFactory.decodeResource(res, R.drawable.wallpaper_waves, o);
+        cached = BitmapFactory.decodeResource(res, R.drawable.wallpaper_main, o);
         return cached;
     }
 
